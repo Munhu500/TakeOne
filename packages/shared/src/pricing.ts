@@ -1,4 +1,4 @@
-import { BPS, BRAND_CREDIT, CREATOR_SHARE_BPS, LICENSE_DEFAULTS, PLATFORM_FEE_BPS } from './config';
+import { BPS, BRAND_CREDIT, clampTermDays, CREATOR_SHARE_BPS, CREDITS_ENABLED, LICENSE_DEFAULTS, PLATFORM_FEE_BPS } from './config';
 import { assertMinor } from './currency';
 
 function bps(amountMinor: number, rate: number): number {
@@ -40,7 +40,8 @@ export interface CampaignCharge {
  * Brand credit (Option B) is applied only against the platform's 25% fee.
  * Creator payouts are never reduced by credits or discounts.
  */
-export function campaignCharge(feePerCreatorMinor: number, creators: number, creditAvailableMinor = 0): CampaignCharge {
+export function campaignCharge(feePerCreatorMinor: number, creators: number, creditAvailableMinor = 0, opts: { creditsEnabled?: boolean } = {}): CampaignCharge {
+  if (!(opts.creditsEnabled ?? CREDITS_ENABLED)) creditAvailableMinor = 0; // credits are switched off: never applied
   assertMinor(feePerCreatorMinor);
   assertMinor(creditAvailableMinor);
   if (!Number.isInteger(creators) || creators < 1) throw new Error('creators must be a positive integer');
@@ -61,8 +62,9 @@ export function campaignCharge(feePerCreatorMinor: number, creators: number, cre
 }
 
 /** Credit issued when a brand's first campaign completes: 25% of that campaign's value. */
-export function firstCampaignCredit(campaignValueMinor: number): number {
+export function firstCampaignCredit(campaignValueMinor: number, opts: { creditsEnabled?: boolean } = {}): number {
   assertMinor(campaignValueMinor);
+  if (!(opts.creditsEnabled ?? CREDITS_ENABLED)) return 0;
   return bps(campaignValueMinor, BRAND_CREDIT.bps);
 }
 
@@ -93,10 +95,15 @@ export function licensePrice(type: LicenseType, feePerCreatorMinor: number, p: P
   }
 }
 
-/** License end date. Buyouts are perpetual (null). */
+/** Licence end date. The term is clamped to 35–45 days; buyouts are perpetual (null). */
 export function licenseEndsAt(type: LicenseType, startsAt: Date, termDays: number = LICENSE_DEFAULTS.termDays): Date | null {
   if (type === 'buyout') return null;
-  return new Date(startsAt.getTime() + termDays * 86_400_000);
+  return new Date(startsAt.getTime() + clampTermDays(termDays) * 86_400_000);
+}
+/** A renewal starts when the current licence ends (or now, if it already lapsed) and adds the same term again. */
+export function renewalWindow(currentEndsAt: Date | null, now: Date, termDays: number = LICENSE_DEFAULTS.termDays): { startsAt: Date; endsAt: Date } {
+  const startsAt = currentEndsAt && currentEndsAt.getTime() > now.getTime() ? currentEndsAt : now;
+  return { startsAt, endsAt: new Date(startsAt.getTime() + clampTermDays(termDays) * 86_400_000) };
 }
 
 export interface AgencyInvoiceLine {

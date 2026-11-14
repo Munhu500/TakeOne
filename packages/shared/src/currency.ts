@@ -43,21 +43,29 @@ export function assertMinor(n: number): void {
   if (!Number.isSafeInteger(n)) throw new Error(`Money must be an integer in minor units, got ${n}`);
 }
 
-export function formatMoney(amountMinor: number, currency: string, opts: { compact?: boolean; locale?: string } = {}): string {
+export interface MoneyFormat {
+  compact?: boolean;
+  locale?: string;
+  /** 'auto' (default): decimals only when the amount has them · 'never': summaries · 'always': invoices */
+  decimals?: 'auto' | 'never' | 'always';
+}
+export function formatMoney(amountMinor: number, currency: string, opts: MoneyFormat = {}): string {
   const cur = isCurrency(currency) ? currency : 'USD';
   const { decimals, locale } = CURRENCIES[cur];
   const major = amountMinor / 10 ** decimals; // display only
   const whole = amountMinor % 10 ** decimals === 0;
+  const mode = opts.decimals ?? 'auto';
+  const show = mode === 'always' || (mode === 'auto' && !whole);
   try {
     return new Intl.NumberFormat(opts.locale ?? locale, {
       style: 'currency',
       currency: cur,
       notation: opts.compact ? 'compact' : 'standard',
-      minimumFractionDigits: opts.compact || whole ? 0 : decimals,
-      maximumFractionDigits: opts.compact ? 1 : whole ? 0 : decimals,
+      minimumFractionDigits: opts.compact || !show ? 0 : decimals,
+      maximumFractionDigits: opts.compact ? 1 : show ? decimals : 0,
     }).format(major);
   } catch {
-    return `${CURRENCIES[cur].symbol}${major.toFixed(whole ? 0 : decimals)}`;
+    return `${CURRENCIES[cur].symbol}${major.toFixed(show ? decimals : 0)}`;
   }
 }
 

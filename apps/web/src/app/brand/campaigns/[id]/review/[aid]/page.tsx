@@ -32,7 +32,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   const delivered = new Set(variants.map((v) => v.format));
   return (
     <>
-      <Link href={`/brand/campaigns/${id}?tab=creators`} className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted hover:text-fg"><ArrowLeft size={14} />{c.title}</Link>
+      <Link href={`/brand/campaigns/${id}?tab=creators`} className="mb-3 inline-flex items-center gap-2 text-small text-secondary hover:text-primary"><ArrowLeft size={14} />{c.title}</Link>
       <PageHeader title={`Variants from ${creators.get(a.creator_id)?.display_name ?? 'creator'}`} sub="One take, cut into ad formats and ranked against your brief." />
       <Review
         campaignId={id} assignment={{ id: a.id, status: a.status, winning_variant_id: a.winning_variant_id, post_url: a.post_url, delivered_at: a.delivered_at, approved_at: a.approved_at }}

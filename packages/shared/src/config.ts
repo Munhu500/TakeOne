@@ -17,17 +17,30 @@ export type Tier = keyof typeof TIERS;
 export const EARLY_ACCESS_HOURS = 48;
 export const PRO_PRICE_USD_MINOR = 1_900;
 
+/** Business decision: a licence runs 35–45 days (default 45). Renewals extend by the same term. */
+export const LICENSE_TERM = { minDays: 35, maxDays: 45, defaultDays: 45 } as const;
+export function clampTermDays(days: number | null | undefined): number {
+  const d = Number.isFinite(days) ? Math.round(days as number) : LICENSE_TERM.defaultDays;
+  return Math.min(LICENSE_TERM.maxDays, Math.max(LICENSE_TERM.minDays, d));
+}
+
 export const LICENSE_DEFAULTS = {
   baseIncludedVariants: 3,
-  termDays: 90,
-  /** price of one extra variant for 90 days, as a share of the per-creator fee */
+  termDays: LICENSE_TERM.defaultDays,
+  /** price of one extra variant for one term, as a share of the per-creator fee */
   extraVariantBps: 2_000,
   renewalBps: 5_000,
   buyoutBps: 20_000,
+  /** "Partnership ad": the brand runs the ad from the creator's handle. Stored as licence type `whitelist`. */
   whitelistBps: 3_000,
   renewalReminderDays: 7,
 } as const;
 
+/** Display names for licence types. The stored key `whitelist` is always shown as "Partnership ad". */
+export const LICENSE_LABELS = { base: 'Included', extra: 'Extra variant', renewal: 'Renewal', buyout: 'Buyout', whitelist: 'Partnership ad' } as const;
+
+/** Business decision: campaign credit is removed from the product. The code path stays behind this flag. */
+export const CREDITS_ENABLED = false;
 export const BRAND_CREDIT = { bps: 2_500, validDays: 60 } as const;
 
 export const GUARANTEE = {

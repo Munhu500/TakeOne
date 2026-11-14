@@ -1,4 +1,4 @@
-import { LICENSE_DEFAULTS } from '@takeone/shared';
+import { CREDITS_ENABLED, LICENSE_DEFAULTS } from '@takeone/shared';
 import { requireBrand } from '@/lib/session';
 import { supabaseServer } from '@/lib/supabase-server';
 import { PageHeader } from '@/components/ui';
@@ -7,7 +7,7 @@ import { CampaignWizard } from './wizard';
 export default async function NewCampaign() {
   const s = await requireBrand();
   const sb = await supabaseServer();
-  const { data: credits } = await sb.from('credits').select('amount_minor, used_minor').eq('brand_id', s.brand.id).eq('currency', s.brand.currency).gt('expires_at', new Date().toISOString());
+  const { data: credits } = !CREDITS_ENABLED ? { data: [] as { amount_minor: number; used_minor: number }[] } : await sb.from('credits').select('amount_minor, used_minor').eq('brand_id', s.brand.id).eq('currency', s.brand.currency).gt('expires_at', new Date().toISOString());
   const credit = (credits ?? []).reduce((a, c) => a + Number(c.amount_minor) - Number(c.used_minor), 0);
   return (
     <>

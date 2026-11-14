@@ -65,10 +65,14 @@ select pg_temp.expect(can_read_variant_object((select take_id || '/hook_first/cl
 select pg_temp.expect((purchase_license((select id from variants where format = 'day_in_life'), 'extra')).price_minor = 200000, 'extra variant = 20% of fee');
 select approve_assignment((select id from assignments), 5, 'great');
 select pg_temp.expect((select status = 'completed' from campaigns), 'campaign completes when all slots approved');
-select pg_temp.expect((select credit_balance from brands where id = (select v from ids where k = 'brand')) = 250000, 'Option B credit = 25% of campaign value');
+select pg_temp.expect((select credit_balance from brands where id = (select v from ids where k = 'brand')) = 0 and (select count(*) from credits) = 0, 'credits are switched off: none issued on completion');
+select pg_temp.expect((select bool_and(ends_at::date = (starts_at + interval '45 days')::date) from licenses), 'licences run 45 days');
+select pg_temp.expect((select (purchase_license((select id from variants where format = 'hook_first'), 'renewal')).ends_at::date = (now() + interval '90 days')::date), 'renewal adds another 45 days after the current end');
+select pg_temp.expect((purchase_license((select id from variants where format = 'hook_first'), 'whitelist')).price_minor = 300000, 'partnership ad = 30% of fee');
 -- creator: cleared, then available after the delay, then KYC + partial withdrawal
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
-select pg_temp.expect((select count(*) = 2 and bool_and(state = 'cleared') and sum(amount_minor) = 750001 + 150000 from ledger_entries), 'campaign + license earnings cleared');
+select pg_temp.expect((select count(*) = 4 and bool_and(state = 'cleared') and sum(amount_minor) = 750001 + 150000 + 375000 + 225000 from ledger_entries), 'campaign + licence earnings cleared, 75% of each');
+select pg_temp.expect((select count(*) = 1 from ledger_entries where description like 'Partnership ad · %') and not exists (select 1 from ledger_entries where description ilike '%whitelist%'), 'creators see "Partnership ad", never "whitelist"');
 select pg_temp.expect((select wins_count = 3 and submissions_count = 3 and campaigns_completed = 1 and rating_avg = 5 from creators), 'creator stats updated');
 reset role; select set_config('request.jwt.claims', '', true); update ledger_entries set available_at = now() - interval '1 minute'; select run_scheduled_jobs(); set local role authenticated;
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
@@ -82,12 +86,18 @@ do $$ begin
 end $$;
 select pg_temp.expect(submit_kyc('a', 'b', 'ABCDE1234F') = 'verified', 'demo KYC approves instantly');
 select pg_temp.expect((request_withdrawal('upi', '{"upi_id":"c1@upi"}', 800000)).status = 'paid', 'mock payout');
-select pg_temp.expect((select sum(amount_minor) filter (where state = 'withdrawn') = 800000 and sum(amount_minor) filter (where state = 'available') = 100001 from ledger_entries), 'partial withdrawal splits an entry');
--- second campaign: credit applies against the platform fee only
+select pg_temp.expect((select sum(amount_minor) filter (where state = 'withdrawn') = 800000 and sum(amount_minor) filter (where state = 'available') = 700001 from ledger_entries), 'partial withdrawal splits an entry');
+-- second campaign: a leftover credit row is ignored while credits are off, and applied (platform fee only) when switched on
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000b1');
 insert into campaigns (brand_id, title, product_name, categories, countries, creators_needed, fee_per_creator_minor, currency, deadline)
-  select v, 'Second', 'Serum', array['beauty'], array['IN'], 2, 400000, 'INR', now() + interval '14 days' from ids where k = 'brand';
-select pg_temp.expect((select p.credit_applied_minor = 200000 and p.amount_minor = 600000 from confirm_campaign_payment((select id from campaigns where title = 'Second')) p), 'credit capped at the 25% fee; creators untouched');
+  select v, t, 'Serum', array['beauty'], array['IN'], 2, 400000, 'INR', now() + interval '14 days' from ids, unnest(array['Second', 'Third']) t where k = 'brand';
+reset role; select set_config('request.jwt.claims', '', true);
+insert into credits (brand_id, amount_minor, currency, expires_at) select v, 250000, 'INR', now() + interval '30 days' from ids where k = 'brand';
+set local role authenticated; select pg_temp.as_user('00000000-0000-0000-0000-0000000000b1');
+select pg_temp.expect((select p.credit_applied_minor = 0 and p.amount_minor = 800000 from confirm_campaign_payment((select id from campaigns where title = 'Second')) p), 'credits off: brand pays the full amount');
+reset role; select set_config('request.jwt.claims', '', true); update settings set value = 'true' where key = 'credits_enabled';
+set local role authenticated; select pg_temp.as_user('00000000-0000-0000-0000-0000000000b1');
+select pg_temp.expect((select p.credit_applied_minor = 200000 and p.amount_minor = 600000 from confirm_campaign_payment((select id from campaigns where title = 'Third')) p), 'legacy path: credit capped at the 25% fee; creators untouched');
 -- masking parity with the TypeScript implementation
 select pg_temp.expect((select masked not like '%gmail%' and kinds @> array['email', 'phone'] from mask_contact('Mail priya.k@gmail.com or call +971 50 123 4567')), 'masks email + phone');
 select pg_temp.expect((select kinds = '{}' from mask_contact('Can you ship 2 units? The 30ml one, order 4521.')), 'normal message untouched');

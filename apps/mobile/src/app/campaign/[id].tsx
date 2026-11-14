@@ -82,7 +82,7 @@ export default function CampaignDetail() {
         <Card style={{ gap: 8 }}>
           <Text weight="semibold">Usage terms</Text>
           <Text size="sm" tone="muted">The brand can license up to {LICENSE_DEFAULTS.baseIncludedVariants} variants for {LICENSE_DEFAULTS.termDays} days of paid ads on Meta, TikTok and YouTube, plus organic use on its own channels.</Text>
-          <Text size="sm" tone="muted">Extra variants, renewals, buyouts and whitelisting are paid add-ons. You get 75% of each.</Text>
+          <Text size="sm" tone="muted">Extra variants, renewals, buyouts and partnership ads are paid add-ons. You get 75% of each.</Text>
         </Card>
         {c.brief.uses_ai_likeness && (
           <Card style={{ gap: 8 }}>

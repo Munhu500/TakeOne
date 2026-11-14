@@ -1,5 +1,18 @@
 # Changelog
 
+## Web premium overhaul 1 of 4 — Studio Noir design system
+- `packages/design-tokens`: colours (dark and light), type scale, 4pt spacing, radii, sizes, motion presets, generated
+  `tokens.css`, Tailwind preset, and an automated WCAG AA contrast test for every text/surface pair and agency accents.
+- `pnpm check:tokens` fails on any colour, size, radius, spacing, shadow, gradient, emoji or external font outside the tokens.
+- Self-hosted Geist, Geist Mono and Instrument Serif (`next/font/local`); no external font requests.
+- Component library in `apps/web/src/components/ui`; every web screen moved onto it. Gallery at `/_design`.
+- Business decisions: campaign credit disabled (`CREDITS_ENABLED=false`, UI hidden), licence term 45 days (35–45,
+  renewals add one term to the current end date), "Whitelist" renamed "Partnership ad" in UI, ledger and invoices.
+  Migration `20260101000008_business_decisions.sql`; new pricing tests.
+- Demo data: illustrated product images and cartoon variant footage removed; neutral frames until real media is added
+  under `apps/web/public/media`.
+- Mobile is untouched apart from one line of copy; follow-ups are in `TODO_MOBILE.md`.
+
 ## Static preview build
 - `pnpm build:preview`: Next.js static export + Expo web export under `/app`, `.htaccess`, secret scan, `takeone-preview.zip` for plain Apache hosting.
 - Preview mode is behind `NEXT_PUBLIC_STATIC_PREVIEW` / `EXPO_PUBLIC_STATIC_PREVIEW`; the normal builds are unchanged.

@@ -1,23 +1,5 @@
 import type { Config } from 'tailwindcss';
+import preset from '@takeone/design-tokens/tailwind';
 
-const v = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
-export default {
-  darkMode: ['class', '[data-theme="dark"]'],
-  content: ['./src/**/*.{ts,tsx}'],
-  theme: {
-    extend: {
-      colors: {
-        bg: v('bg'), surface: v('surface'), raised: v('raised'), line: v('line'),
-        fg: v('fg'), muted: v('muted'), faint: v('faint'),
-        accent: v('accent'), 'accent-fg': v('accent-fg'),
-        ok: v('ok'), warn: v('warn'), bad: v('bad'),
-      },
-      fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['"Clash Display"', 'Satoshi', '"Inter Display"', 'Inter', 'ui-sans-serif', 'sans-serif'],
-      },
-      borderRadius: { xl: '14px', '2xl': '20px' },
-    },
-  },
-  plugins: [],
-} satisfies Config;
+// Every theme value comes from packages/design-tokens. Do not add colours, sizes or radii here.
+export default { presets: [preset as Config], content: ['./src/**/*.{ts,tsx}'] } satisfies Config;

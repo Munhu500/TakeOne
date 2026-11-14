@@ -2,9 +2,9 @@
 // which picks the real page from the address bar. `_` folders are placeholders that .htaccess serves for any id.
 import { PreviewHost } from '@/preview/host';
 
-const ADMIN = ['qa', 'verification', 'users', 'campaigns', 'disputes', 'payouts', 'masking', 'credits', 'settings'];
+const ADMIN = ['qa', 'verification', 'users', 'campaigns', 'disputes', 'payouts', 'masking', 'settings'];
 const PATHS = [
-  '', 'login', 'signup', 'onboarding', 'dashboard', 'creators', 'auth/callback',
+  '', 'login', 'signup', 'onboarding', 'dashboard', 'creators', 'auth/callback', '_design',
   'brand', 'brand/campaigns/new', 'brand/campaigns/_', 'brand/campaigns/_/review/_', 'brand/licenses', 'brand/leaderboard', 'brand/billing',
   'agency', 'agency/branding', 'admin', ...ADMIN.map((s) => `admin/${s}`),
 ];

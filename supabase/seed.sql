@@ -1,5 +1,6 @@
 -- TakeOne demo data. Idempotent only on an empty database (supabase db reset). All demo logins use the password below.
--- Sample video files referenced here are uploaded by `pnpm samples` (services/video-worker).
+-- Seeded variants and products carry no media: the web shows neutral frames until real footage and photos are supplied
+-- (apps/web/public/media). `pnpm samples` still builds the worker's test take.
 create or replace function public.seed_user(p_id uuid, p_email text, p_role text, p_name text) returns uuid
 language plpgsql security definer set search_path = public, extensions, auth as $$
 begin
@@ -119,7 +120,7 @@ begin
     insert into campaigns (id, brand_id, agency_id, title, product_name, product_url, product_images, brief, shot_list, categories, countries, creators_needed, fee_per_creator_minor, currency,
       deadline, status, early_access_until, qa_required, published_at, completed_at, created_at)
     select ('c0000000-0000-4000-8000-0000000000' || lpad(camp.n::text, 2, '0'))::uuid, bid, b.agency_id, camp.title, camp.product, 'https://example.com/products/' || camp.slug,
-      array['seed/products/' || camp.slug || '.jpg'], seed_brief(camp.product, camp.b1, camp.b2, camp.b3, camp.audience), seed_shots(camp.product, camp.b1), camp.categories, array[b.country],
+      '{}'::text[], seed_brief(camp.product, camp.b1, camp.b2, camp.b3, camp.audience), seed_shots(camp.product, camp.b1), camp.categories, array[b.country],
       camp.needed, camp.fee, b.currency, now() + make_interval(days => 12 + camp.n), camp.status,
       case when camp.status = 'draft' then null when camp.age = 0 then now() + interval '40 hours' else now() + make_interval(days => camp.age, hours => 48) end,
       camp.n in (9, 12), case when camp.status <> 'draft' then now() + make_interval(days => camp.age) end, case when camp.status = 'completed' then now() - interval '6 days' end,
@@ -166,10 +167,8 @@ begin
       '{"language":"en","text":"Okay so my skin used to look really tired by the afternoon. I have been using this serum every morning for thirty days. It is lightweight, it is not sticky, and it sits well under sunscreen. Honestly my skin looks brighter and I would buy it again."}', now() - interval '17 days');
     foreach fmt in array fmts loop
       insert into variants (take_id, format, storage_path, renditions, preview_renditions, thumbnail, hook_text, hook_options, score, score_reason, is_synthetic, ai_disclosure, language, visible_to_brand, status)
-      values (t, fmt, t || '/' || fmt || '/clean_9x16.mp4',
-        jsonb_build_object('9:16', t || '/' || fmt || '/clean_9x16.mp4', '4:5', t || '/' || fmt || '/clean_4x5.mp4', '1:1', t || '/' || fmt || '/clean_1x1.mp4'),
-        jsonb_build_object('9:16', t || '/' || fmt || '/preview_9x16.mp4', '4:5', t || '/' || fmt || '/preview_4x5.mp4', '1:1', t || '/' || fmt || '/preview_1x1.mp4'),
-        t || '/' || fmt || '/thumb.jpg', hooks -> fmt ->> 0, array(select jsonb_array_elements_text(hooks -> fmt)), (scores ->> fmt)::int,
+      values (t, fmt, null, '{}'::jsonb, '{}'::jsonb,
+        null, hooks -> fmt ->> 0, array(select jsonb_array_elements_text(hooks -> fmt)), (scores ->> fmt)::int,
         case fmt when 'hook_first' then 'Problem lands in 1.4s, hook is 8 words, product on screen by 0:04. Strong brief fit.' when 'testimonial_tight' then 'Clean verdict kept word for word; filler removed. Slightly slow first line.'
           when 'day_in_life' then 'Scene suits the audience; foreground untouched. Hook is softer than Hook First.' when 'silent_montage' then 'Reads well muted; one caption card runs long.' else 'Faithful Hindi translation of the verdict; captions match.' end,
         fmt in ('day_in_life', 'language_version'), case when fmt in ('day_in_life', 'language_version') then 'Enable the platform’s AI-info label when publishing' end, case when fmt = 'language_version' then 'hi' end,
@@ -182,26 +181,23 @@ begin
 
   -- ── complete campaign money: 3 base licenses + a renewal-soon one, review, ledger in every state ──
   insert into licenses (variant_id, brand_id, campaign_id, type, starts_at, ends_at, price_minor, currency)
-    select v.id, 'b0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', 'base', now() - interval '85 days', now() + interval '5 days', 0, 'INR'
+    select v.id, 'b0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', 'base', now() - interval '40 days', now() + interval '5 days', 0, 'INR'
     from variants v where v.take_id = '7a000000-0000-4000-8000-000000000001' and v.status = 'licensed';
   update assignments set winning_variant_id = (select id from variants where take_id = '7a000000-0000-4000-8000-000000000001' and format = 'hook_first') where id = a1;
   insert into payments (brand_id, campaign_id, kind, provider, provider_ref, gross_minor, amount_minor, currency, status, settled_at, metadata, created_at)
     values ('b0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', 'license', 'mock', 'mock_pi_seed_wl', 750000, 750000, 'INR', 'released', now() - interval '2 days', '{"type":"whitelist"}', now() - interval '2 days') returning id into pay;
   insert into licenses (variant_id, brand_id, campaign_id, type, starts_at, ends_at, price_minor, currency, payment_id)
-    select id, 'b0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', 'whitelist', now() - interval '2 days', now() + interval '88 days', 750000, 'INR', pay
+    select id, 'b0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', 'whitelist', now() - interval '2 days', now() + interval '43 days', 750000, 'INR', pay
     from variants where take_id = '7a000000-0000-4000-8000-000000000001' and format = 'hook_first' returning id into lic;
   insert into reviews (assignment_id, rating, comment) values (a1, 5, 'Delivered early, variants were on-brief. Hook First is running as our top ad.');
   insert into withdrawals (creator_id, method, destination, amount_minor, currency, status, provider_ref, created_at) values (hero, 'upi', '{"upi_id":"priya@okhdfc"}', 1200000, 'INR', 'paid', 'mock_po_seed', now() - interval '20 days') returning id into w;
   insert into ledger_entries (creator_id, source, amount_minor, currency, state, cleared_at, available_at, campaign_id, assignment_id, license_id, payment_id, withdrawal_id, description, created_at) values
     (hero, 'campaign', 1200000, 'INR', 'withdrawn', now() - interval '50 days', now() - interval '47 days', null, null, null, null, w, 'Hydra Lip Tint launch', now() - interval '60 days'),
     (hero, 'campaign', 1875000, 'INR', 'available', now() - interval '14 days', now() - interval '11 days', 'c0000000-0000-4000-8000-000000000001', a1, null, null, null, 'Vitamin C Glow Serum — 30-day results', now() - interval '36 days'),
-    (hero, 'license', 562500, 'INR', 'cleared', now() - interval '2 days', now() + interval '1 day', 'c0000000-0000-4000-8000-000000000001', a1, lic, pay, null, 'Whitelist license · Vitamin C Glow Serum', now() - interval '2 days'),
+    (hero, 'license', 562500, 'INR', 'cleared', now() - interval '2 days', now() + interval '1 day', 'c0000000-0000-4000-8000-000000000001', a1, lic, pay, null, 'Partnership ad · Vitamin C Glow Serum — 30-day results', now() - interval '2 days'),
     (hero, 'campaign', 1350000, 'INR', 'pending', null, null, 'c0000000-0000-4000-8000-000000000002', a2, null, null, null, 'SPF 50 Invisible Sunscreen launch', now() - interval '2 days'),
     ('aaaaaaaa-0000-4000-8000-000000000005', 'campaign', 1350000, 'INR', 'pending', null, null, 'c0000000-0000-4000-8000-000000000002', a3, null, null, null, 'SPF 50 Invisible Sunscreen launch', now() - interval '6 days'),
     ('aaaaaaaa-0000-4000-8000-000000000002', 'campaign', 120000, 'AED', 'pending', null, null, 'c0000000-0000-4000-8000-000000000009', a4, null, null, null, 'Oud Rose Hair Mist', now() - interval '8 days');
-  -- Option B credit from Kaya Glow's first completed campaign (25% of ₹25,000), valid 60 days from completion
-  insert into credits (brand_id, amount_minor, currency, expires_at, source_campaign_id, created_at) values ('b0000000-0000-4000-8000-000000000001', 625000, 'INR', now() + interval '54 days', 'c0000000-0000-4000-8000-000000000001', now() - interval '6 days');
-  update brands set credit_balance = 625000 where id = 'b0000000-0000-4000-8000-000000000001';
   update creators set kyc_status = 'verified' where profile_id = hero;
 
   -- ── messages (one masked), notifications, a dispute ──
@@ -214,8 +210,7 @@ begin
   insert into notifications (profile_id, type, title, body, data, created_at) values
     (hero, 'accepted', 'You''re in: SPF 50 Invisible Sunscreen launch', 'Open the campaign to see your shot list and start shooting.', jsonb_build_object('assignment_id', a2), now() - interval '2 days'),
     (hero, 'invite', 'Invitation: Masala Chai Instant Premix', 'A brand invited you directly. Respond within 48 hours.', '{"campaign_id":"c0000000-0000-4000-8000-000000000003"}', now() - interval '5 hours'),
-    ('bbbbbbbb-0000-4000-8000-000000000001', 'delivered', 'New variants to review', 'SPF 50 Invisible Sunscreen launch', jsonb_build_object('assignment_id', a3), now() - interval '20 hours'),
-    ('bbbbbbbb-0000-4000-8000-000000000001', 'credit', 'You earned campaign credit', 'Valid for 60 days against the platform fee on your next campaign.', '{}', now() - interval '6 days');
+    ('bbbbbbbb-0000-4000-8000-000000000001', 'delivered', 'New variants to review', 'SPF 50 Invisible Sunscreen launch', jsonb_build_object('assignment_id', a3), now() - interval '20 hours');
   insert into disputes (assignment_id, opened_by, reason, created_at) values (a3, 'aaaaaaaa-0000-4000-8000-000000000005', 'Product arrived 4 days late; asking for a deadline extension.', now() - interval '3 days');
   insert into audit_log (action, entity, entity_id, data) values ('seed', 'database', 'demo', '{}');
 end $$;

@@ -89,12 +89,12 @@ Change or delete these accounts before pointing a public URL at the project.
 2. **Web** as `brand@takeone.demo`: open the campaign → *Creators & variants* → **Review variants**. Pick up to 3, buy an add-on, choose the winner, approve with a rating.
 3. Back on **mobile**: Wallet shows the earning cleared; Studio asks for the post link.
 4. **Web** as `admin@takeone.demo`: QA queue, verification queue, disputes, settings.
-5. **Web** as `brand@takeone.demo`: open the draft *Night Repair Retinol Cream* → pay. The first-campaign credit is applied against the platform fee only.
+5. **Web** as `brand@takeone.demo`: open the draft *Night Repair Retinol Cream* → pay. The full amount is held in escrow.
 
 ## Tests
 
 ```bash
-pnpm test          # unit tests: split + credit, ledger transitions, masking, plausibility, leaderboard, schemas
+pnpm test          # unit tests: split, licence term, partnership-ad pricing, credit (disabled), ledger transitions, masking, plausibility, leaderboard, schemas
 pnpm db:verify     # SQL: migrations, RLS smoke tests, and the whole money flow through the database functions
 pnpm typecheck
 ```
@@ -140,6 +140,17 @@ Real mode: set `DEMO_MODE=false`, add the keys in `.env.example`, set the `demo_
 - Unfilled creator slots are not refunded automatically when a campaign ends; refunds go through admin disputes.
 - Screen recording uses the phone's own recorder with an app-generated code and timestamp shown on screen, then uploads the file.
 - The money maths exists in TypeScript (`packages/shared`, unit-tested) and in SQL (`creator_share`, tested in `supabase/tests`). Change both together.
+
+## Design system (web)
+
+- Tokens live in `packages/design-tokens` (`src/tokens.ts` is the source; `tokens.css` and the Tailwind preset are generated
+  from it). Change a value there, run `pnpm --filter @takeone/design-tokens build`, and it applies everywhere.
+- `pnpm check:tokens` proves `apps/web/src` uses nothing outside the tokens. It runs alongside `pnpm typecheck` and `pnpm test`.
+- Components are in `apps/web/src/components/ui`. Every token and component, in every state, is at `/_design`
+  (add `?theme=light` for light). The page is not linked anywhere and is admin-only when `NEXT_PUBLIC_DEMO_MODE=false`.
+- Real media: drop files into `apps/web/public/media` (`hero/take.mp4`, `products/<product-name-slug>.jpg`,
+  `variants/<format_id>.mp4`). Until a file exists the slot shows a neutral frame. See the README in that folder.
+- Light mode is offered on the brand dashboard only. Agency white-label changes the accent colour only.
 
 ## Static preview (plain Apache hosting, e.g. Hostinger)
 

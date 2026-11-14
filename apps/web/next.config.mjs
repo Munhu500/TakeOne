@@ -1,10 +1,12 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
+import { writeMediaManifest } from './scripts/media-manifest.mjs';
 
 // one .env at the repo root is shared by web, worker and scripts
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 dotenv.config({ path: path.join(root, '.env') });
+writeMediaManifest(path.join(root, 'apps/web'));
 
 // Static preview (Hostinger / plain Apache): `NEXT_PUBLIC_STATIC_PREVIEW=true next build`. Off by default, so the normal
 // (Vercel) build is untouched. In preview mode only *.preview.tsx files are routes, and server-only modules are swapped
@@ -38,7 +40,7 @@ const previewConfig = {
 /** @type {import('next').NextConfig} */
 export default {
   ...(PREVIEW ? previewConfig : {}),
-  transpilePackages: ['@takeone/shared', '@takeone/providers'],
+  transpilePackages: ['@takeone/shared', '@takeone/providers', '@takeone/design-tokens'],
   outputFileTracingRoot: root,
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '',

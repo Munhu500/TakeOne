@@ -2,7 +2,8 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { rpc, setActiveBrand, updateRow } from '@/lib/actions';
-import { Button } from '@/components/ui';
+import { Button, Flag, Input } from '@/components/ui';
+import { Select } from '@/components/ui/select';
 
 export function OpenWorkspace({ brandId }: { brandId: string }) {
   return <Button variant="secondary" onClick={() => setActiveBrand(brandId)}>Open workspace</Button>;
@@ -22,7 +23,7 @@ export function MarkupField({ brandId, bps, isDefault }: { brandId: string; bps:
   return (
     <div>
       <label className="label" htmlFor={`m-${brandId}`}>Your markup on client invoices{isDefault ? ' (agency default)' : ''}</label>
-      <div className="flex items-center gap-2"><input id={`m-${brandId}`} className="input tabular w-24" inputMode="decimal" value={pct} onChange={(e) => { setPct(e.target.value); setState(null); }} /><span className="text-sm text-muted">%</span><Button size="sm" variant="ghost" onClick={save}>Save</Button>{state && <span className="text-xs text-muted" role="status">{state}</span>}</div>
+      <div className="flex items-center gap-2"><input id={`m-${brandId}`} className="input tabular w-24" inputMode="decimal" value={pct} onChange={(e) => { setPct(e.target.value); setState(null); }} /><span className="text-small text-secondary">%</span><Button size="sm" variant="ghost" onClick={save}>Save</Button>{state && <span className="text-caption text-secondary" role="status">{state}</span>}</div>
     </div>
   );
 }
@@ -41,11 +42,11 @@ export function ClientForm({ agencyId, defaultBps, countries }: { agencyId: stri
       if (!r.ok) return setError(r.error ?? 'Could not add client');
       setName(''); router.refresh();
     }}>
-      <div><label className="label" htmlFor="cn">Client brand name</label><input id="cn" className="input" required minLength={2} value={name} onChange={(e) => setName(e.target.value)} /></div>
-      <div><label className="label" htmlFor="cc">Country</label><select id="cc" className="input" value={country} onChange={(e) => setCountry(e.target.value)}>{countries.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}</select></div>
-      <p className="text-xs text-faint">Starts at your default markup of {(defaultBps / 100).toFixed(0)}%.</p>
-      {error && <p role="alert" className="text-xs text-bad">{error}</p>}
-      <Button type="submit" disabled={busy}>Create workspace</Button>
+      <Input id="cn" label="Client brand name" required minLength={2} value={name} onChange={(e) => setName(e.target.value)} />
+      <Select id="cc" label="Country" value={country} onValueChange={setCountry} options={countries.map((c) => ({ value: c.code, label: c.name, icon: <Flag code={c.code} /> }))} />
+      <p className="text-caption text-tertiary">Starts at your default markup of {(defaultBps / 100).toFixed(0)}%.</p>
+      {error && <p role="alert" className="text-caption text-danger-text">{error}</p>}
+      <Button type="submit" loading={busy}>Create workspace</Button>
     </form>
   );
 }

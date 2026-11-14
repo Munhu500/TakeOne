@@ -24,8 +24,8 @@ rm -f "$OUT/app/metadata.json"
 find "$OUT" -name "*.map" -delete   # no source maps in the preview
 
 echo "4/6 Banner + .htaccess"
-# The Next pages render the banner themselves (layout.preview.tsx). The creator app gets the same pill injected into its shell.
-BANNER='<div role="note" style="position:fixed;right:12px;bottom:76px;z-index:99999;pointer-events:none;font:500 11px/1 Inter,system-ui,sans-serif;color:#FBBF24;background:rgba(0,0,0,.85);border:1px solid rgba(251,191,36,.4);border-radius:999px;padding:6px 10px">Preview build — demo data</div>'
+# The web shell shows a small neutral "Demo" pill beside the wordmark. The creator app gets the same pill injected into its shell.
+BANNER='<div role="note" title="Payments, payouts and AI services are simulated" style="position:fixed;right:12px;bottom:76px;z-index:99999;pointer-events:none;font:500 12px/16px system-ui,sans-serif;color:#A1A1AA;background:#111114;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 10px">Demo</div>'
 python3 - "$OUT/app/index.html" "$BANNER" <<'PY'
 import sys
 p, banner = sys.argv[1], sys.argv[2]

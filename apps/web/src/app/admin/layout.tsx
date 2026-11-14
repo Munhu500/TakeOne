@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { requireRole } from '@/lib/session';
+import { CREDITS_ENABLED } from '@takeone/shared';
 import { Shell } from '@/components/shell';
 
 const NAV = [
@@ -9,5 +10,5 @@ const NAV = [
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const s = await requireRole('admin');
-  return <Shell session={s} nav={NAV.map(([k, label, icon]) => ({ href: `/admin/${k}`, label, icon }))}>{children}</Shell>;
+  return <Shell session={s} nav={NAV.filter(([k]) => k !== 'credits' || CREDITS_ENABLED).map(([k, label, icon]) => ({ href: `/admin/${k}`, label, icon }))}>{children}</Shell>;
 }

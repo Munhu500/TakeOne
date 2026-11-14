@@ -5,6 +5,8 @@ import { cloneElement, isValidElement, useCallback, useEffect, useState, type Re
 import { hostAgency, resetPreviewCache } from '@/lib/session.preview';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { PreviewNotFound, PreviewRedirect, REFRESH_EVENT } from './navigation';
+import { SkeletonPage } from '@/components/ui';
+import { agencyThemeCss } from '@/lib/theme';
 import { go, logicalPath } from './url';
 
 type PageFn = (props: { params: Promise<Record<string, string>>; searchParams: Promise<Record<string, string>> }) => ReactNode | Promise<ReactNode>;
@@ -25,6 +27,7 @@ const ROUTES: [pattern: string, load: () => Promise<PageFn>, layout?: () => Prom
   ['/onboarding', () => import('@/app/onboarding/page').then(page)],
   ['/dashboard', () => import('@/app/dashboard/page').then(page)],
   ['/creators', () => import('@/app/creators/page').then(page)],
+  ['/_design', () => import('@/app/%5Fdesign/page').then(page)],
   ['/brand', () => import('@/app/brand/page').then(page), brandLayout],
   ['/brand/campaigns/new', () => import('@/app/brand/campaigns/new/page').then(page), brandLayout],
   ['/brand/campaigns/:id', () => import('@/app/brand/campaigns/[id]/page').then(page), brandLayout],
@@ -65,17 +68,8 @@ async function resolveTree(node: ReactNode): Promise<ReactNode> {
   return Array.isArray(c) ? cloneElement(el, undefined, ...(await Promise.all(c.map(resolveTree)))) : cloneElement(el, undefined, await resolveTree(c));
 }
 
-function Skeleton() {
-  return (
-    <div className="mx-auto max-w-5xl px-6 py-10" aria-busy="true" aria-label="Loading">
-      <div className="skeleton mb-6 h-9 w-64" />
-      <div className="grid gap-4 sm:grid-cols-4">{[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-24" />)}</div>
-      <div className="skeleton mt-6 h-72" />
-    </div>
-  );
-}
 function Message({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
-  return <div className="mx-auto mt-24 max-w-md px-6 text-center"><h1 className="font-display text-2xl font-semibold">{title}</h1><p className="mt-2 text-sm text-muted">{body}</p>{action && <div className="mt-6">{action}</div>}</div>;
+  return <div className="mx-auto mt-24 max-w-md px-6 text-center"><h1 className="text-h3">{title}</h1><p className="mt-2 text-small text-secondary">{body}</p>{action && <div className="mt-6">{action}</div>}</div>;
 }
 
 export function PreviewHost() {
@@ -110,30 +104,21 @@ export function PreviewHost() {
     return () => window.removeEventListener(REFRESH_EVENT, run);
   }, [run]);
 
-  if (state.missing) return <Message title="Page not found" body="This link does not point to anything in the preview." action={<a className="text-accent hover:underline" href="/">Back to home</a>} />;
-  if (state.error && !state.node) return <Message title="Something went wrong" body={state.error} action={<button className="text-accent hover:underline" onClick={() => { setState({}); void run(); }}>Try again</button>} />;
-  return state.node ?? <Skeleton />;
+  if (state.missing) return <Message title="Page not found" body="This link does not point to anything in the preview." action={<a className="text-accent-text hover:underline" href="/">Back to home</a>} />;
+  if (state.error && !state.node) return <Message title="Something went wrong" body={state.error} action={<button className="text-accent-text hover:underline" onClick={() => { setState({}); void run(); }}>Try again</button>} />;
+  return state.node ?? <div className="container-page py-8"><SkeletonPage /></div>;
 }
 
-function hexToRgb(hex: string): string {
-  const n = parseInt(hex.replace('#', ''), 16);
-  return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
-}
-/** Applies the agency theme chosen with ?agency=<slug> (same CSS variable the server layout sets by host). */
+/** Applies the agency theme chosen with ?agency=<slug>: the same generated accent variables the server layout sets by host. */
 export function AgencyTheme() {
   useEffect(() => {
     hostAgency().then((a) => {
       if (!a) return;
-      document.documentElement.style.setProperty('--accent', hexToRgb(a.primary_color));
+      const style = document.createElement('style');
+      style.textContent = agencyThemeCss(a.primary_color);
+      document.head.appendChild(style);
       document.title = `${a.name} · Creator campaigns`;
     }).catch(() => {});
   }, []);
   return null;
-}
-export function PreviewBanner() {
-  return (
-    <div role="note" className="pointer-events-none fixed bottom-3 right-3 z-[1000] rounded-full border border-warn/40 bg-black/85 px-3 py-1.5 text-[11px] font-medium text-warn shadow-lg">
-      Preview build — demo data · <a className="pointer-events-auto underline" href="/app/">creator app</a>
-    </div>
-  );
 }

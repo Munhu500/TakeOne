@@ -1,10 +1,9 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { LogOut } from 'lucide-react';
 import { signOut } from '@/lib/actions';
 import { hostAgency, type Session } from '@/lib/session';
-import { Avatar, btn } from '@/components/ui';
-import { ThemeToggle } from '@/components/client';
+import { Avatar, DemoPill } from '@/components/ui';
+import { SignOutButton, ThemeToggle } from '@/components/client';
 import { BrandSwitcher, NavLinks } from '@/components/nav';
 import { DEMO } from '@/lib/utils';
 
@@ -16,39 +15,40 @@ export async function whiteLabel(session?: Session | null) {
 
 export function Wordmark({ name, logo, href = '/' }: { name: string; logo?: string | null; href?: string }) {
   return (
-    <Link href={href} className="flex items-center gap-2.5 font-display text-lg font-semibold">
-      {logo ? <Avatar name={name} src={logo} size={28} square /> : <span aria-hidden className="grid h-7 w-7 place-items-center rounded-lg bg-accent text-sm font-bold text-accent-fg">{name[0]}</span>}
+    <Link href={href} className="flex items-center gap-3 rounded-sm text-body-lg font-semibold">
+      {logo && <Avatar name={name} src={logo} size="sm" square />}
       {name}
     </Link>
   );
 }
 
-export async function Shell({ session, nav, children }: { session: Session; nav: { href: string; label: string; icon: string }[]; children: ReactNode }) {
+/** Dashboard frame: sidebar on desktop, glass top bar on mobile. Light mode is offered in the brand dashboard only. */
+export async function Shell({ session, nav, themeToggle, children }: { session: Session; nav: { href: string; label: string; icon: string }[]; themeToggle?: boolean; children: ReactNode }) {
   const wl = await whiteLabel(session);
+  const who = session.profile.display_name || session.email;
   return (
-    <div className="mx-auto flex min-h-screen max-w-[1400px]">
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line px-4 py-5 md:flex">
-        <Wordmark {...wl} href={nav[0]?.href} />
+    <div className="mx-auto flex min-h-screen max-w-shell">
+      <aside className="sticky top-0 hidden h-screen w-sidebar shrink-0 flex-col border-r border-border px-4 py-6 md:flex">
+        <div className="flex items-center justify-between gap-2 px-2"><Wordmark {...wl} href={nav[0]?.href} />{DEMO && <DemoPill />}</div>
         {session.profile.role === 'agency_member' && session.brands.length > 0 && <BrandSwitcher brands={session.brands.map((b) => ({ id: b.id, name: b.name }))} active={session.brand?.id ?? null} />}
-        <NavLinks nav={nav} className="mt-6 flex flex-1 flex-col gap-0.5" />
-        <div className="flex items-center gap-2.5 border-t border-line pt-4">
-          <Avatar name={session.profile.display_name || session.email} src={session.profile.avatar} size={32} />
+        <NavLinks nav={nav} className="mt-6 flex flex-1 flex-col gap-1" />
+        <div className="flex items-center gap-3 border-t border-border pt-4">
+          <Avatar name={who} src={session.profile.avatar} size="sm" />
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium">{session.profile.display_name}</div>
-            <div className="truncate text-xs text-faint">{session.email}</div>
+            <div className="truncate text-small font-medium">{session.profile.display_name}</div>
+            <div className="truncate text-caption text-tertiary">{session.email}</div>
           </div>
-          <ThemeToggle />
-          <form action={signOut}><button className={btn('ghost', 'sm')} aria-label="Sign out"><LogOut size={15} /></button></form>
+          {themeToggle && <ThemeToggle />}
+          <form action={signOut}><SignOutButton /></form>
         </div>
       </aside>
       <div className="min-w-0 flex-1">
-        <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 md:hidden">
-          <Wordmark {...wl} href={nav[0]?.href} />
-          <div className="flex items-center gap-1"><ThemeToggle /><form action={signOut}><button className={btn('ghost', 'sm')} aria-label="Sign out"><LogOut size={15} /></button></form></div>
+        <header className="glass sticky top-0 z-nav flex items-center justify-between gap-3 px-5 py-3 md:hidden">
+          <div className="flex items-center gap-3"><Wordmark {...wl} href={nav[0]?.href} />{DEMO && <DemoPill />}</div>
+          <div className="flex items-center gap-1">{themeToggle && <ThemeToggle />}<form action={signOut}><SignOutButton /></form></div>
         </header>
-        <NavLinks nav={nav} className="flex gap-1 overflow-x-auto border-b border-line px-3 py-2 md:hidden" compact />
-        {DEMO && <div className="border-b border-line bg-accent/10 px-6 py-1.5 text-center text-xs text-muted">Demo mode: payments, payouts and AI services are simulated.</div>}
-        <main className="px-4 py-6 sm:px-8 sm:py-8">{children}</main>
+        <NavLinks nav={nav} className="flex gap-1 overflow-x-auto border-b border-border px-3 py-2 md:hidden" compact />
+        <main className="px-5 py-6 md:px-8 md:py-8">{children}</main>
       </div>
     </div>
   );

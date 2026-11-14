@@ -1,0 +1,146 @@
+/* Generated from src/tokens.ts by `pnpm --filter @takeone/design-tokens build`. Do not edit by hand. */
+:root, [data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #09090B;
+  --surface-1: #111114;
+  --surface-2: #18181C;
+  --surface-3: #222228;
+  --border: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.14);
+  --text-primary: #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --text-tertiary: #898991;
+  --accent: #7C5CFF;
+  --accent-hover: #6A4BF0;
+  --accent-soft: rgba(124,92,255,0.12);
+  --accent-text: #9980FF;
+  --on-accent: #09090B;
+  --accent-fill-hover: #8C70FF;
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --success-soft: rgba(52,211,153,0.12);
+  --warning-soft: rgba(251,191,36,0.12);
+  --danger-soft: rgba(248,113,113,0.12);
+  --success-text: #34D399;
+  --warning-text: #FBBF24;
+  --danger-text: #F87171;
+  --inverse: #FAFAFA;
+  --on-inverse: #09090B;
+  --inverse-hover: #E4E4E7;
+  --scrim: rgba(0,0,0,0.72);
+  --scrim-soft: rgba(0,0,0,0.4);
+  --on-media: #FAFAFA;
+  --on-media-muted: rgba(250,250,250,0.72);
+  --glass: rgba(9,9,11,0.72);
+}
+[data-theme='light'] {
+  color-scheme: light;
+  --bg: #FAFAF9;
+  --surface-1: #FFFFFF;
+  --surface-2: #F4F4F5;
+  --surface-3: #E4E4E7;
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.14);
+  --text-primary: #09090B;
+  --text-secondary: #52525B;
+  --text-tertiary: #65656D;
+  --accent: #7C5CFF;
+  --accent-hover: #6A4BF0;
+  --accent-soft: rgba(124,92,255,0.12);
+  --accent-text: #5F47C4;
+  --on-accent: #09090B;
+  --accent-fill-hover: #8C70FF;
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --success-soft: rgba(52,211,153,0.12);
+  --warning-soft: rgba(251,191,36,0.12);
+  --danger-soft: rgba(248,113,113,0.12);
+  --success-text: #1B6E50;
+  --warning-text: #7D5F12;
+  --danger-text: #974545;
+  --inverse: #09090B;
+  --on-inverse: #FAFAFA;
+  --inverse-hover: #27272A;
+  --scrim: rgba(0,0,0,0.72);
+  --scrim-soft: rgba(0,0,0,0.4);
+  --on-media: #FAFAFA;
+  --on-media-muted: rgba(250,250,250,0.72);
+  --glass: rgba(250,250,249,0.72);
+}
+:root {
+  --font-sans: var(--font-geist, "Geist", Inter, system-ui, -apple-system, "Segoe UI", sans-serif);
+  --font-mono: var(--font-geist-mono, "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace);
+  --font-serif: var(--font-instrument-serif, "Instrument Serif", Georgia, serif);
+  --fs-display: 2.75rem;
+  --lh-display: 3rem;
+  --fs-h1: 2.125rem;
+  --lh-h1: 2.375rem;
+  --fs-h2: 1.625rem;
+  --lh-h2: 2rem;
+  --fs-h3: 1.25rem;
+  --lh-h3: 1.625rem;
+  --fs-body-lg: 1.0625rem;
+  --lh-body-lg: 1.625rem;
+  --fs-body: 0.9375rem;
+  --lh-body: 1.375rem;
+  --fs-small: 0.875rem;
+  --lh-small: 1.25rem;
+  --fs-caption: 0.75rem;
+  --lh-caption: 1rem;
+  --fs-stat: 2.5rem;
+  --lh-stat: 2.5rem;
+  --fs-stat-sm: 2rem;
+  --lh-stat-sm: 2.25rem;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 999px;
+  --shadow-float: 0 24px 64px -16px rgba(0,0,0,0.7);
+  --glass-blur: 20px;
+  --content-max: 1200px;
+  --gutter: 20px;
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-nav: 20;
+  --z-dropdown: 30;
+  --z-drawer: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --press-scale: 0.98;
+}
+@media (min-width: 768px) {
+  :root {
+    --fs-display: 4.75rem;
+    --lh-display: 5rem;
+    --fs-h1: 3.25rem;
+    --lh-h1: 3.5rem;
+    --fs-h2: 2.25rem;
+    --lh-h2: 2.625rem;
+    --fs-h3: 1.375rem;
+    --lh-h3: 1.75rem;
+    --fs-body-lg: 1.125rem;
+    --lh-body-lg: 1.875rem;
+    --fs-body: 1rem;
+    --lh-body: 1.625rem;
+    --fs-small: 0.875rem;
+    --lh-small: 1.25rem;
+    --fs-caption: 0.75rem;
+    --lh-caption: 1rem;
+    --fs-stat: 3.5rem;
+    --lh-stat: 3.5rem;
+    --fs-stat-sm: 2rem;
+    --lh-stat-sm: 2.25rem;
+    --gutter: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --press-scale: 1; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-property: opacity, color, background-color, border-color !important; }
+}

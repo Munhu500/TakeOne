@@ -4,7 +4,7 @@ import { Send, ShieldAlert } from 'lucide-react';
 import { MASKING_NOTICE, maskContactInfo } from '@takeone/shared';
 import { rpc } from '@/lib/actions';
 import { supabaseBrowser } from '@/lib/supabase-browser';
-import { Button } from '@/components/ui';
+import { Button, ICON } from '@/components/ui';
 import { cn, timeAgo } from '@/lib/utils';
 
 interface Msg { id: string; sender_id: string; body_masked: string; had_masking: boolean; created_at: string }
@@ -44,22 +44,22 @@ export function Chat({ campaignId, creatorId, me, initial, otherName }: { campai
     setText('');
   }
   return (
-    <div className="card flex h-[520px] flex-col">
-      <div className="border-b border-line px-4 py-3 text-sm font-medium">{otherName}<span className="ml-2 text-xs font-normal text-faint">Contact details are never shared</span></div>
+    <div className="card flex h-panel flex-col">
+      <div className="border-b border-border px-4 py-3 text-small font-medium">{otherName}<span className="ml-2 text-caption font-normal text-tertiary">Contact details are never shared</span></div>
       <div className="flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">
-        {msgs.length === 0 && <p className="pt-10 text-center text-sm text-muted">No messages yet. Say hello and confirm shipping details here.</p>}
+        {msgs.length === 0 && <p className="pt-12 text-center text-small text-secondary">No messages yet. Say hello and confirm shipping details here.</p>}
         {msgs.map((m) => (
           <div key={m.id} className={cn('flex flex-col', m.sender_id === me ? 'items-end' : 'items-start')}>
-            <div className={cn('max-w-[80%] rounded-2xl px-3.5 py-2 text-sm', m.sender_id === me ? 'bg-accent text-accent-fg' : 'bg-raised')}>{m.body_masked}</div>
-            {m.had_masking && <div className="mt-1 flex max-w-[80%] items-center gap-1 text-[11px] text-warn"><ShieldAlert size={12} />{MASKING_NOTICE}</div>}
-            <div className="mt-0.5 text-[11px] text-faint">{timeAgo(m.created_at)}</div>
+            <div className={cn('max-w-md rounded-sm px-4 py-2 text-small', m.sender_id === me ? 'bg-accent text-on-accent' : 'bg-surface-2')}>{m.body_masked}</div>
+            {m.had_masking && <div className="mt-1 flex max-w-md items-center gap-1 text-caption text-warning-text"><ShieldAlert size={12} />{MASKING_NOTICE}</div>}
+            <div className="mt-1 text-caption text-tertiary">{timeAgo(m.created_at)}</div>
           </div>
         ))}
         <div ref={end} />
       </div>
-      <form onSubmit={send} className="border-t border-line p-3">
-        {willMask && <p className="mb-2 flex items-center gap-1 text-xs text-warn"><ShieldAlert size={12} />Contact details and off-platform requests will be hidden before this is sent.</p>}
-        {error && <p role="alert" className="mb-2 text-xs text-bad">{error}</p>}
+      <form onSubmit={send} className="border-t border-border p-3">
+        {willMask && <p className="mb-2 flex items-center gap-1 text-caption text-warning-text"><ShieldAlert size={12} />Contact details and off-platform requests will be hidden before this is sent.</p>}
+        {error && <p role="alert" className="mb-2 text-caption text-danger-text">{error}</p>}
         <div className="flex gap-2">
           <input className="input" aria-label="Message" placeholder="Write a message" maxLength={2000} value={text} onChange={(e) => setText(e.target.value)} />
           <Button type="submit" disabled={busy || !text.trim()} aria-label="Send"><Send size={15} /></Button>

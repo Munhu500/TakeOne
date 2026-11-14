@@ -1,29 +1,44 @@
+@import '@takeone/design-tokens/tokens.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root, [data-theme='dark'] {
-  color-scheme: dark;
-  --bg: 9 9 11; --surface: 17 17 20; --raised: 26 26 31; --line: 39 39 46;
-  --fg: 250 250 250; --muted: 161 161 170; --faint: 113 113 122;
-  --accent: 124 92 255; --accent-fg: 255 255 255;
-  --ok: 52 211 153; --warn: 251 191 36; --bad: 248 113 113;
+@layer base {
+  html, body { background: var(--bg); color: var(--text-primary); }
+  body { @apply font-sans text-body antialiased; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
+  ::selection { background: var(--accent-soft); }
+  code, kbd { @apply font-mono text-small; }
 }
-[data-theme='light'] {
-  color-scheme: light;
-  --bg: 250 250 250; --surface: 255 255 255; --raised: 244 244 245; --line: 228 228 231;
-  --fg: 9 9 11; --muted: 82 82 91; --faint: 113 113 122;
-  --ok: 5 150 105; --warn: 180 83 9; --bad: 220 38 38;
-}
-html, body { background: rgb(var(--bg)); color: rgb(var(--fg)); }
-body { font-feature-settings: 'cv11', 'ss01'; -webkit-font-smoothing: antialiased; }
-h1, h2, h3, .font-display { letter-spacing: -0.02em; }
-:focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; border-radius: 6px; }
-.tabular { font-variant-numeric: tabular-nums; }
+
 @layer components {
-  .card { @apply rounded-2xl border border-line bg-surface; }
-  .input { @apply w-full rounded-xl border border-line bg-raised px-3.5 py-2.5 text-sm text-fg placeholder:text-faint focus:border-accent focus:outline-none; }
-  .label { @apply mb-1.5 block text-xs font-medium text-muted; }
-  .skeleton { @apply animate-pulse rounded-xl bg-raised; }
+  /* Numbers: money, stats, counts, tables, leaderboards */
+  .tabular { font-variant-numeric: tabular-nums; }
+  /* The "caption" label style: 12/16, uppercase, tracked, tertiary */
+  .caption-label { @apply text-caption uppercase tracking-label text-tertiary; }
+  .card { @apply rounded-lg border border-border bg-surface-1; }
+  .input { @apply h-input w-full rounded-sm border border-border bg-surface-2 px-4 text-body text-primary transition-colors duration-fast placeholder:text-tertiary hover:border-border-strong focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-soft disabled:cursor-not-allowed disabled:opacity-50; }
+  textarea.input { @apply h-auto min-h-24 py-3; }
+  .label { @apply mb-2 block text-small font-medium text-primary; }
+  .helper { @apply mt-2 text-small text-tertiary; }
+  /* Glass: top nav and sticky bars only */
+  .glass { background: var(--glass); @apply border-b border-border backdrop-blur-glass; }
+  .skeleton { @apply animate-shimmer rounded-md; background: linear-gradient(90deg, var(--surface-1) 25%, var(--surface-2) 50%, var(--surface-1) 75%); background-size: 200% 100%; }
+  /* The only gradient in the system: black → transparent over imagery, for legibility */
+  .scrim-bottom { background: linear-gradient(to top, var(--scrim), transparent); }
+  .prose-width { @apply max-w-prose; }
+  .container-page { @apply mx-auto w-full max-w-content px-5 md:px-6; }
 }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+
+@layer components {
+  /* Tables: sticky caption-style header, 56px rows, hairline separators, no vertical lines, row hover */
+  .data-table { @apply w-full border-collapse text-small; }
+  .data-table thead tr { @apply border-b border-border; }
+  .data-table th { @apply caption-label sticky top-0 z-sticky h-12 bg-surface-1 px-4 text-left font-medium; }
+  .data-table th.num, .data-table td.num { @apply text-right; font-variant-numeric: tabular-nums; }
+  .data-table tbody tr { @apply h-row border-b border-border transition-colors duration-fast last:border-b-0 hover:bg-surface-3; }
+  .data-table td { @apply px-4 py-2 align-middle; }
+  /* Filter chips (links or buttons) */
+  .chip { @apply inline-flex h-control-sm items-center gap-2 whitespace-nowrap rounded-full border border-border px-4 text-small capitalize text-secondary transition duration-fast ease-standard hover:border-border-strong hover:text-primary active:scale-press; }
+  .chip[aria-pressed='true'], .chip[aria-current='true'], .chip.is-on { @apply border-transparent bg-inverse text-on-inverse; }
+}

@@ -12,7 +12,7 @@ const { chromium } = require('playwright');
   await page.getByText('Pick (included)').first().click();
   await page.getByText(/Select 1 variant/).click(); await page.getByText('Licensed').first().waitFor({ timeout: 20000 }); console.log('selected + licensed');
   await page.getByText(/^Whitelist ·/).first().click(); await page.getByText(/whitelisted/).first().waitFor({ timeout: 20000 }); console.log('whitelist add-on bought');
-  await page.getByText('Creator posts this one').first().click(); await page.getByText('Winner').first().waitFor({ timeout: 20000 }); console.log('winner chosen');
+  await page.getByText('Set as winning post').first().click(); await page.getByText('Winner').first().waitFor({ timeout: 20000 }); console.log('winner chosen');
   await page.getByText('Approve and release payment').click(); await page.getByText(/Approved on/).waitFor({ timeout: 20000 }); console.log('approved');
   await page.screenshot({ path: S + '/e-brand.png', fullPage: true });
   await browser.close();

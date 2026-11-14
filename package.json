@@ -15,7 +15,8 @@
     "seed": "pnpm --filter @takeone/seed seed",
     "samples": "pnpm --filter @takeone/video-worker samples",
     "build:preview": "bash scripts/build-preview.sh",
-    "serve:preview": "node scripts/preview-server.cjs preview-dist 8090"
+    "serve:preview": "node scripts/preview-server.cjs preview-dist 8090",
+    "check:tokens": "node scripts/check-tokens.mjs"
   },
   "devDependencies": {
     "turbo": "^2.3.3",

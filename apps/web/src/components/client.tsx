@@ -1,11 +1,12 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition, type ReactNode } from 'react';
-import { Moon, Sun, Loader2 } from 'lucide-react';
+import { LogOut, Moon, Sun } from 'lucide-react';
 import { rpc, type ActionResult } from '@/lib/actions';
-import { btn } from '@/components/ui';
-import { cn } from '@/lib/utils';
+import { Button, ICON, type ButtonSize, type ButtonVariant } from '@/components/ui';
+import { ConfirmDialog, IconButton } from '@/components/ui/overlays';
 
+/** Brand dashboard only. */
 export function ThemeToggle() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   useEffect(() => setTheme((document.documentElement.dataset.theme as 'dark' | 'light') ?? 'dark'), []);
@@ -15,39 +16,39 @@ export function ThemeToggle() {
     try { localStorage.setItem('t1-theme', next); } catch { /* private mode */ }
     setTheme(next);
   };
-  return (
-    <button onClick={flip} className={btn('ghost', 'sm')} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
-      {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-    </button>
-  );
+  return <IconButton label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} onClick={flip}>{theme === 'dark' ? <Sun size={16} {...ICON} /> : <Moon size={16} {...ICON} />}</IconButton>;
+}
+export function SignOutButton() {
+  return <IconButton label="Sign out" type="submit"><LogOut size={16} {...ICON} /></IconButton>;
 }
 
-/** Button that runs a server action, shows progress and surfaces the error inline. */
-export function ActionButton({ action, children, variant = 'primary', size = 'md', confirm: confirmText, className, onDone, disabled }: {
-  action: () => Promise<ActionResult>; children: ReactNode; variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; size?: 'sm' | 'md'; confirm?: string; className?: string; onDone?: (r: ActionResult) => void; disabled?: boolean;
+/**
+ * Button that runs a server action, shows progress at a fixed width and surfaces the error inline.
+ * `confirm` opens a dialog that restates the effect of the action before it runs.
+ */
+export function ActionButton({ action, children, variant = 'primary', size = 'md', confirm, className, onDone, disabled }: {
+  action: () => Promise<ActionResult>; children: ReactNode; variant?: ButtonVariant; size?: ButtonSize; confirm?: string | { title: string; effect: string; confirmLabel?: string };
+  className?: string; onDone?: (r: ActionResult) => void; disabled?: boolean;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [asking, setAsking] = useState(false);
+  const run = () => {
+    setError(null);
+    start(async () => {
+      const r = await action();
+      setAsking(false);
+      if (!r.ok) setError(r.error ?? 'Something went wrong');
+      else { onDone?.(r); router.refresh(); }
+    });
+  };
+  const c = typeof confirm === 'string' ? { title: 'Please confirm', effect: confirm, confirmLabel: 'Confirm' } : confirm;
   return (
     <span className="inline-flex flex-col items-start gap-1">
-      <button
-        disabled={pending || disabled}
-        className={cn(btn(variant, size), className)}
-        onClick={() => {
-          if (confirmText && !window.confirm(confirmText)) return;
-          setError(null);
-          start(async () => {
-            const r = await action();
-            if (!r.ok) setError(r.error ?? 'Something went wrong');
-            else { onDone?.(r); router.refresh(); }
-          });
-        }}
-      >
-        {pending && <Loader2 size={14} className="animate-spin" />}
-        {children}
-      </button>
-      {error && <span role="alert" className="max-w-xs text-xs text-bad">{error}</span>}
+      <Button variant={variant} size={size} className={className} loading={pending && !asking} disabled={disabled} onClick={() => (c ? setAsking(true) : run())}>{children}</Button>
+      {error && <span role="alert" className="max-w-xs text-caption text-danger-text">{error}</span>}
+      {c && <ConfirmDialog open={asking} onOpenChange={setAsking} title={c.title} effect={c.effect} confirmLabel={c.confirmLabel ?? 'Confirm'} destructive={variant === 'destructive'} busy={pending} onConfirm={run} />}
     </span>
   );
 }

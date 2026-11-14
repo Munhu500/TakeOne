@@ -19,3 +19,4 @@ preview-dist
 takeone-preview.zip
 apps/mobile/dist-preview
 *.tsbuildinfo
+apps/web/src/lib/media-manifest.json

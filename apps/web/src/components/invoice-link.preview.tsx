@@ -7,7 +7,7 @@ import { supabaseBrowser } from '@/lib/supabase-browser';
 export function InvoiceLink({ paymentId, label }: { paymentId: string; label: string }) {
   const [state, setState] = useState<'idle' | 'busy' | 'error'>('idle');
   return (
-    <button className="text-xs text-accent hover:underline disabled:opacity-50" disabled={state === 'busy'} onClick={async () => {
+    <button className="text-caption text-accent-text hover:underline disabled:opacity-50" disabled={state === 'busy'} onClick={async () => {
       setState('busy');
       const { data } = await supabaseBrowser().from('payments').select(INVOICE_SELECT).eq('id', paymentId).maybeSingle();
       if (!data) return setState('error');
