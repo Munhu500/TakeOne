@@ -1,0 +1,9 @@
+**/node_modules
+**/.next
+**/dist
+**/.work
+**/.expo
+.env
+.git
+apps/mobile
+apps/web

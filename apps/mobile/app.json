@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "TakeOne",
+    "slug": "takeone",
+    "scheme": "takeone",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": { "bundleIdentifier": "app.takeone.creator", "supportsTablet": false, "infoPlist": { "NSCameraUsageDescription": "TakeOne uses the camera to record your take.", "NSMicrophoneUsageDescription": "TakeOne records audio with your take.", "NSPhotoLibraryUsageDescription": "Choose an ID photo or a recording to upload." } },
+    "android": { "package": "app.takeone.creator", "permissions": ["CAMERA", "RECORD_AUDIO"] },
+    "web": { "bundler": "metro", "output": "single" },
+    "plugins": [
+      "expo-router",
+      ["expo-camera", { "cameraPermission": "TakeOne uses the camera to record your take.", "microphonePermission": "TakeOne records audio with your take.", "recordAudioAndroid": true }],
+      "expo-video", "expo-image", "expo-secure-store", "expo-font", "expo-web-browser", "expo-splash-screen", "expo-status-bar"
+    ],
+    "experiments": { "typedRoutes": false }
+  }
+}

@@ -1,0 +1,14 @@
+# fly launch --no-deploy --copy-config --dockerfile services/video-worker/Dockerfile   (run from the repo root)
+app = "takeone-video-worker"
+primary_region = "bom"
+
+[build]
+  dockerfile = "services/video-worker/Dockerfile"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 2
+  memory = "2gb"
+
+[processes]
+  worker = "pnpm start"
