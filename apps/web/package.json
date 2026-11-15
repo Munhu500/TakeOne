@@ -8,7 +8,8 @@
     "start": "next start -p 3000",
     "typecheck": "node -e \"import('./scripts/media-manifest.mjs').then(m=>m.writeMediaManifest(process.cwd()))\" && tsc --noEmit",
     "lint": "next lint",
-    "og": "node scripts/og-image.cjs"
+    "og": "node scripts/og-image.cjs",
+    "media": "node scripts/optimise-media.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.3.1",

@@ -1,6 +1,7 @@
 'use server';
 import { cookies } from 'next/headers';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { AGENCY_HOST_TAG } from './site';
 import { redirect } from 'next/navigation';
 import { agencyBrandingSchema, campaignInputSchema } from '@takeone/shared';
 import { supabaseServer } from './supabase-server';
@@ -58,6 +59,7 @@ export async function updateAgencyBranding(agencyId: string, input: unknown): Pr
   const { error } = await sb.from('agencies').update(p.data).eq('id', agencyId);
   if (error) return { ok: false, error: error.message };
   revalidatePath('/', 'layout');
+  revalidateTag(AGENCY_HOST_TAG);
   return { ok: true };
 }
 

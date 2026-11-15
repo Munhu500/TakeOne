@@ -1,6 +1,8 @@
 // Landing-page sections that are plain markup (rendered on the server in the normal build).
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { preload } from 'react-dom';
+import { IMAGE_EXTS, mediaFile } from '@/components/ui/media';
 import { BadgeCheck, Lock, Scale, UserCheck } from 'lucide-react';
 import { Avatar, btn, ICON, ImageSlot } from '@/components/ui';
 import { MarketingProvider, type Audience } from '@/lib/marketing';
@@ -9,7 +11,7 @@ import foundingCreators from '@/data/founding-creators.json';
 import brandLogos from '@/data/brand-logos.json';
 import { DEMO_HREF, FAQ, LIVE, RESULTS, SIGNUP, TRUST } from './copy';
 import {
-  CountrySelect, Earnings, Em, FinalCta, FormatsReel, Hero, HowItWorks, LeaderboardPreview, MarketingNav, Pricing, Problem, StatCard, StickyCta, WaitlistForm,
+  CountrySelect, Earnings, MotionProvider, Em, FinalCta, FormatsReel, Hero, HowItWorks, LeaderboardPreview, MarketingNav, Pricing, Problem, StatCard, StickyCta, WaitlistForm,
 } from './interactive';
 
 interface FoundingCreator { name: string; handle?: string; avatar?: string; permission?: boolean }
@@ -134,16 +136,19 @@ export function MarketingFooter() {
 /** Nav, page content and footer for every public page. */
 export function MarketingFrame({ preselect, children }: { preselect?: Audience; children: ReactNode }) {
   return (
-    <MarketingProvider preselect={preselect}>
+    <MarketingProvider preselect={preselect}><MotionProvider>
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-toast focus:rounded-full focus:bg-inverse focus:px-4 focus:py-2 focus:text-small focus:text-on-inverse">Skip to content</a>
       <MarketingNav />
       <main id="main" className="pt-16">{children}</main>
       <MarketingFooter />
-    </MarketingProvider>
+    </MotionProvider></MarketingProvider>
   );
 }
 
 export function LandingPage({ preselect }: { preselect?: Audience }) {
+  // the hero poster is the largest image above the fold: ask for it before anything else
+  const poster = mediaFile('hero/take', IMAGE_EXTS);
+  if (poster) preload(poster, { as: 'image', fetchPriority: 'high' });
   return (
     <MarketingFrame preselect={preselect}>
       <Hero />

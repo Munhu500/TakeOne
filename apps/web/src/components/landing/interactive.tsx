@@ -3,13 +3,12 @@
 // hero visuals, the formats reel, the waitlist form and the country selector.
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, LazyMotion, m, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Check, ChevronDown, Menu, X } from 'lucide-react';
 import { convertMinor, earningsBand, PRO_PRICE_USD_MINOR, V1_FORMATS, waitlistSchema } from '@takeone/shared';
 import { motion as motionTokens } from '@takeone/design-tokens';
 import { Avatar, Badge, btn, Button, DemoPill, Flag, ICON, ProductImage, VideoFrame, type ButtonVariant, type ButtonSize } from '@/components/ui';
-import { mediaFile } from '@/components/ui/media';
-import { supabaseBrowser } from '@/lib/supabase-browser';
+import { IMAGE_EXTS, mediaFile } from '@/components/ui/media';
 import { track } from '@/lib/analytics';
 import { useMarketing, type Audience, type Market } from '@/lib/marketing';
 import { cn, DEMO, money } from '@/lib/utils';
@@ -17,6 +16,11 @@ import { DEMO_HREF, EARN, EXAMPLE_LEADERBOARD, EXAMPLE_SCORES, EXAMPLE_WALLET, F
 
 const EASE = motionTokens.easing;
 const FADE = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: motionTokens.duration.base / 1000, ease: EASE } };
+
+/** Animation code is fetched after first paint; until it arrives everything renders in its final, visible state. */
+export function MotionProvider({ children }: { children: ReactNode }) {
+  return <LazyMotion strict features={() => import('./motion-features').then((f) => f.default)}>{children}</LazyMotion>;
+}
 
 export const Em = ({ children }: { children: ReactNode }) => <em className="inline-block font-serif font-normal italic">{children}</em>;
 
@@ -29,7 +33,7 @@ export function Swap({ children, className }: { children: (a: Audience) => React
   useEffect(() => { first.current = false; }, []);
   return (
     <AnimatePresence mode="wait">
-      <motion.div key={audience} className={className} initial={first.current ? false : FADE.initial} animate={FADE.animate} exit={FADE.exit} transition={FADE.transition}>{children(audience)}</motion.div>
+      <m.div key={audience} className={className} initial={first.current ? false : FADE.initial} animate={FADE.animate} exit={FADE.exit} transition={FADE.transition}>{children(audience)}</m.div>
     </AnimatePresence>
   );
 }
@@ -136,7 +140,7 @@ export function Hero() {
             return (
               <>
                 <Badge tone="outline">{h.badge}</Badge>
-                <h1 className="mt-5 text-display">{h.headline[0]} <Em>{h.headline[1]}</Em></h1>
+                <h1 className="mt-5 text-display">{h.headline[0]} <em className="block font-serif font-normal italic">{h.headline[1]}</em></h1>
                 <p className="mt-6 max-w-prose text-body-lg text-secondary">{h.sub}</p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Cta where="hero" arrow />
@@ -163,13 +167,13 @@ function CreatorVisual() {
   return (
     <div className="relative size-full">
       <div className="mx-auto aspect-reel h-full rounded-xl border border-border-strong bg-surface-1 p-2">
-        <VideoFrame media="hero/take" radius="lg" label="A creator’s take" autoPlay controls={false} className="size-full" />
+        <VideoFrame media="hero/take" radius="lg" label="A creator’s take" autoPlay priority controls={false} className="size-full" />
       </div>
       {HERO_CHIPS.map((text, i) => (
-        <motion.div key={text} className={cn('absolute flex h-9 items-center gap-2 rounded-full border border-border-strong bg-surface-2 pl-2 pr-4 text-caption shadow-float', CHIP_POS[i])}
+        <m.div key={text} className={cn('absolute flex h-9 items-center gap-2 rounded-full border border-border-strong bg-surface-2 pl-2 pr-4 text-caption shadow-float', CHIP_POS[i])}
           initial={{ opacity: 0, y: reduced ? 0 : 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: motionTokens.duration.slow / 1000, ease: EASE, delay: 0.6 + i * 0.9 }}>
           <span className="grid size-5 place-items-center rounded-full bg-success-soft text-success-text"><Check size={12} strokeWidth={2} aria-hidden /></span>{text}
-        </motion.div>
+        </m.div>
       ))}
     </div>
   );
@@ -179,17 +183,17 @@ const LOOP = 6;
 /** One take fans out into ten scored variants; three are picked. Loops every six seconds; static with reduced motion. */
 function BrandVisual() {
   const reduced = useReducedMotion();
-  const still = mediaFile('hero/take', ['jpg', 'jpeg', 'png', 'webp']);
+  const still = mediaFile('hero/take', IMAGE_EXTS);
   return (
     <div className="flex size-full flex-col items-center justify-between" role="img" aria-label="One take becomes ten scored ad variants; three are selected">
       <div className="aspect-reel w-20 rounded-md border border-border-strong bg-surface-1 p-1 sm:w-24">
-        <VideoFrame media="hero/take" radius="sm" label="The take" autoPlay controls={false} className="size-full" />
+        <VideoFrame media="hero/take" radius="sm" label="The take" autoPlay priority controls={false} className="size-full" />
       </div>
       <div className="grid w-full grid-cols-5 gap-2 sm:gap-3" aria-hidden>
         {EXAMPLE_SCORES.map((score, i) => {
           const start = 0.04 + i * 0.025;
           return (
-            <motion.div key={score} className="relative aspect-reel overflow-hidden rounded-sm border border-border-strong bg-surface-2"
+            <m.div key={score} className="relative aspect-reel overflow-hidden rounded-sm border border-border-strong bg-surface-2"
               initial={reduced ? false : { opacity: 0, scale: 0.6, y: -48 }}
               animate={reduced ? { opacity: 1, scale: 1, y: 0 } : { opacity: [0, 0, 1, 1, 0], scale: [0.6, 0.6, 1, 1, 1], y: [-48, -48, 0, 0, 0] }}
               transition={reduced ? { duration: 0 } : { duration: LOOP, times: [0, start, start + 0.12, 0.94, 1], ease: EASE, repeat: Infinity }}>
@@ -197,12 +201,12 @@ function BrandVisual() {
               {still && <img src={still} alt="" className="absolute inset-0 size-full object-cover" />}
               <span className="tabular absolute bottom-1 left-1 rounded-full bg-scrim px-2 text-caption text-on-media">{score}</span>
               {i < 3 && (
-                <motion.span className="absolute inset-0 rounded-sm border-2 border-accent-brand"
+                <m.span className="absolute inset-0 rounded-sm border-2 border-accent-brand"
                   initial={reduced ? false : { opacity: 0 }} animate={reduced ? { opacity: 1 } : { opacity: [0, 0, 1, 1, 0] }} transition={reduced ? { duration: 0 } : { duration: LOOP, times: [0, 0.5, 0.58, 0.94, 1], repeat: Infinity }}>
                   <span className="absolute right-1 top-1 grid size-4 place-items-center rounded-full bg-accent text-on-accent"><Check size={12} strokeWidth={2} /></span>
-                </motion.span>
+                </m.span>
               )}
-            </motion.div>
+            </m.div>
           );
         })}
       </div>
@@ -261,7 +265,7 @@ function StepVisual({ audience, step }: { audience: Audience; step: number }) {
   if (step === 0) {
     return (
       <div className="space-y-3">
-        <div className="rounded-md border border-border bg-surface-2 p-3"><div className="text-caption text-tertiary">Product link</div><div className="mt-1 truncate font-mono text-small text-secondary">yourbrand.com/products/glow-serum</div></div>
+        <div className="rounded-md border border-border bg-surface-2 p-3"><div className="text-caption text-tertiary">Product link</div><div className="mt-1 truncate text-small text-secondary">yourbrand.com/products/glow-serum</div></div>
         <div className="rounded-md border border-border bg-surface-2 p-4"><div className="text-small font-medium">Brief drafted</div><div className="mt-4 space-y-3"><Bar className="w-full" /><Bar className="w-4/5" /><Bar className="w-3/5" /></div></div>
         <Row><div className="flex-1 text-small font-medium">Budget</div><Badge tone="warning">In escrow</Badge></Row>
       </div>
@@ -336,7 +340,7 @@ export function HowItWorks() {
             <div className="sticky top-24 flex min-h-80 flex-col justify-center">
               <div className="card bg-bg p-8">
                 <AnimatePresence mode="wait">
-                  <motion.div key={`${audience}-${active}`} {...FADE}><StepVisual audience={audience} step={active} /></motion.div>
+                  <m.div key={`${audience}-${active}`} {...FADE}><StepVisual audience={audience} step={active} /></m.div>
                 </AnimatePresence>
               </div>
               <p className="mt-3 text-right text-caption text-tertiary">Example</p>
@@ -435,7 +439,7 @@ export function WaitlistForm({ fixedRole, cta = 'Join the waitlist' }: { fixedRo
     if (!parsed.success) return setState({ error: 'Enter a valid email address.' });
     setState({ busy: true });
     // a filled honeypot is a bot: accept silently and store nothing
-    const { error } = trap ? { error: null } : await supabaseBrowser().from('waitlist').insert(parsed.data);
+    const { error } = trap ? { error: null } : await (await import('@/lib/supabase-browser')).supabaseBrowser().from('waitlist').insert(parsed.data); // loaded on submit, not with the page
     if (error) return setState({ error: 'That did not go through. Please try again.' });
     track('waitlist_submit', { role: chosen, country: m.country });
     setState({ done: true });

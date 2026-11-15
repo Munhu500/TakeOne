@@ -4,6 +4,7 @@ import { ToastHost } from '@/components/ui/toast';
 import { fontVariables } from '@/lib/fonts';
 import { hostAgency } from '@/lib/session';
 import { agencyThemeCss, THEME_SCRIPT } from '@/lib/theme';
+import { SITE_URL } from '@/lib/site';
 import { DEMO } from '@/lib/utils';
 import './globals.css';
 
@@ -14,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const agency = await hostAgency();
   if (agency) return { title: `${agency.name} · Creator campaigns`, description: `${agency.name} creator campaign workspace`, robots: { index: false, follow: false } };
   return {
-    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+    metadataBase: new URL(SITE_URL),
     title: TITLE,
     description: DESCRIPTION,
     icons: { icon: '/favicon.svg' },

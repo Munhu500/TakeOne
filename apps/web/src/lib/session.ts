@@ -1,17 +1,31 @@
 import 'server-only';
 import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
+import { createClient } from '@supabase/supabase-js';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { DEFAULT_FX, type Agency, type Brand, type FxRates, type Profile } from '@takeone/shared';
 import { supabaseServer } from './supabase-server';
+import { AGENCY_HOST_TAG, siteHost } from './site';
+
+/** TakeOne's own hosts are never an agency, so they skip the lookup entirely. */
+const MAIN_HOSTS = new Set(['localhost', '127.0.0.1', siteHost(), `www.${siteHost()}`]);
+/**
+ * Agencies by custom (sub)domain, cached for five minutes and refreshed when branding is saved. Uses the public key
+ * without cookies (the same rows a signed-out visitor to the agency's sign-in page can read), so the result is
+ * safe to share between requests.
+ */
+const agencyByHost = unstable_cache(async (host: string): Promise<Agency | null> => {
+  const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data } = await sb.from('agencies').select('*').eq('subdomain', host).maybeSingle();
+  return (data as Agency | null) ?? null;
+}, ['agency-by-host'], { revalidate: 300, tags: [AGENCY_HOST_TAG] });
 
 /** Agency resolved from the request host (custom subdomain), if any. Used to white-label public and client pages. */
 export const hostAgency = cache(async (): Promise<Agency | null> => {
   const host = (await headers()).get('x-takeone-host');
-  if (!host) return null;
-  const sb = await supabaseServer();
-  const { data } = await sb.from('agencies').select('*').eq('subdomain', host).maybeSingle();
-  return (data as Agency | null) ?? null;
+  if (!host || MAIN_HOSTS.has(host)) return null;
+  return agencyByHost(host);
 });
 
 export const getFx = cache(async (): Promise<FxRates> => {

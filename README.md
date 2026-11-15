@@ -164,7 +164,10 @@ Real mode: set `DEMO_MODE=false`, add the keys in `.env.example`, set the `demo_
 - Media slots: `public/media/hero/take.mp4`, `variants/<format_id>.mp4`, `live/event.jpg`.
 - The waitlist form writes to the insert-only `waitlist` table. Read entries in the Supabase dashboard.
 - Regenerate the Open Graph image after adding hero footage: start the site, then `pnpm --filter @takeone/web og`.
-- Set `NEXT_PUBLIC_SITE_URL` in production so the Open Graph image URL is absolute. Search engines are blocked while
+- `NEXT_PUBLIC_SITE_URL` (default `https://lm-softwaresolutions.com`) makes the Open Graph image URL absolute and
+  tells the app which host is TakeOne's own. Agency lookups by host are cached for five minutes.
+- Posters: add a `.jpg`, then run `pnpm --filter @takeone/web media` to write `.avif` and `.webp` copies; the smallest
+  format present is always used, and the hero poster is preloaded. Search engines are blocked while
   `NEXT_PUBLIC_DEMO_MODE` is on.
 - Analytics: `apps/web/src/lib/analytics.ts` is a no-op with the event names already wired in.
 

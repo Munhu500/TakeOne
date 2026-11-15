@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { ToastHost } from '@/components/ui/toast';
 import { fontVariables } from '@/lib/fonts';
+import { SITE_URL } from '@/lib/site';
 import { THEME_SCRIPT } from '@/lib/theme';
 import { AgencyTheme } from '@/preview/host';
 import './globals.css';
@@ -10,7 +11,10 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'TakeOne — One take. Every winning ad.',
   description: 'Creators film one honest take with a real product. TakeOne turns it into ten ranked ad formats, and brands license the winners. Static preview with demo data.',
+  metadataBase: new URL(SITE_URL),
   icons: { icon: '/favicon.svg' },
+  openGraph: { title: 'TakeOne — One take. Every winning ad.', type: 'website', siteName: 'TakeOne', images: [{ url: '/og.png', width: 1200, height: 630 }] },
+  twitter: { card: 'summary_large_image', images: ['/og.png'] },
   robots: { index: false, follow: false },
 };
 
