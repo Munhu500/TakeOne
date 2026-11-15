@@ -16,7 +16,7 @@ const VARIANT: Record<ButtonVariant, string> = {
   secondary: 'border border-border-strong text-primary hover:bg-surface-3',
   ghost: 'text-secondary hover:bg-surface-3 hover:text-primary',
   // at most one per view: the single most important action in a flow
-  accent: 'bg-accent text-on-accent hover:bg-accent-fill-hover',
+  accent: 'bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-pressed',
   destructive: 'bg-danger-soft text-danger-text hover:bg-surface-3',
 };
 const SIZE: Record<ButtonSize, string> = { sm: 'h-control-sm px-4 text-small', md: 'h-control-md px-5 text-small', lg: 'h-control-lg px-6 text-body' };
@@ -128,7 +128,7 @@ export function Tabs({ tabs, active }: { tabs: { href: string; label: string; co
     <nav className="mb-6 flex gap-2 overflow-x-auto border-b border-border" aria-label="Sections">
       {tabs.map((t) => (
         <Link key={t.href} href={t.href} aria-current={t.href === active ? 'page' : undefined}
-          className={cn('-mb-px inline-flex h-control-md items-center gap-2 whitespace-nowrap border-b-2 px-3 text-small transition-colors duration-fast', t.href === active ? 'border-accent font-medium text-primary' : 'border-transparent text-secondary hover:text-primary')}>
+          className={cn('-mb-px inline-flex h-control-md items-center gap-2 whitespace-nowrap border-b-2 px-3 text-small transition-colors duration-fast', t.href === active ? 'border-accent-brand font-medium text-primary' : 'border-transparent text-secondary hover:text-primary')}>
           {t.label}
           {t.count !== undefined && <span className="tabular rounded-full bg-surface-3 px-2 text-caption text-secondary">{t.count}</span>}
         </Link>
@@ -199,7 +199,7 @@ export function ErrorState({ title = 'This could not be loaded.', retry }: { tit
 /** "2 of 3 creators" style values. */
 export function ProgressBar({ value, max, label, tone = 'neutral' }: { value: number; max: number; label?: string; tone?: 'neutral' | 'accent' | 'success' }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
-  const fill = { neutral: 'bg-inverse', accent: 'bg-accent', success: 'bg-success' }[tone];
+  const fill = { neutral: 'bg-inverse', accent: 'bg-accent-brand', success: 'bg-success' }[tone];
   return (
     <div>
       {label && <div className="tabular mb-2 flex justify-between text-small text-secondary"><span>{label}</span><span>{value} of {max}</span></div>}

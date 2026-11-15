@@ -27,7 +27,7 @@ export function SignupForm({ allowAgency }: { allowAgency: boolean }) {
       {allowAgency && (
         <div role="radiogroup" aria-label="Account type" className="grid grid-cols-2 gap-3">
           {([['brand_member', 'Brand', 'Run campaigns for your own products'], ['agency_member', 'Agency', 'White-label workspaces for clients']] as const).map(([v, t, d]) => (
-            <button type="button" key={v} role="radio" aria-checked={role === v} onClick={() => setRole(v)} className={cn('rounded-md border p-4 text-left transition duration-fast ease-standard active:scale-press', role === v ? 'border-accent bg-accent-soft' : 'border-border bg-surface-2 hover:border-border-strong')}>
+            <button type="button" key={v} role="radio" aria-checked={role === v} onClick={() => setRole(v)} className={cn('rounded-md border p-4 text-left transition duration-fast ease-standard active:scale-press', role === v ? 'border-accent-brand bg-accent-soft' : 'border-border bg-surface-2 hover:border-border-strong')}>
               <div className="text-small font-medium">{t}</div><div className="mt-1 text-caption text-secondary">{d}</div>
             </button>
           ))}

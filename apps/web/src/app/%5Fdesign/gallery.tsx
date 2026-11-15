@@ -17,7 +17,7 @@ const COLOR_GROUPS: [string, ColorToken[]][] = [
   ['Surfaces', ['bg', 'surface-1', 'surface-2', 'surface-3', 'inverse', 'inverse-hover']],
   ['Lines', ['border', 'border-strong']],
   ['Text', ['text-primary', 'text-secondary', 'text-tertiary', 'on-inverse', 'on-accent', 'on-media']],
-  ['Accent', ['accent', 'accent-hover', 'accent-fill-hover', 'accent-soft', 'accent-text']],
+  ['Accent', ['accent-brand', 'accent', 'accent-hover', 'accent-pressed', 'accent-soft', 'accent-text']],
   ['Status', ['success', 'success-soft', 'success-text', 'warning', 'warning-soft', 'warning-text', 'danger', 'danger-soft', 'danger-text']],
   ['Media', ['scrim', 'scrim-soft', 'glass']],
 ];

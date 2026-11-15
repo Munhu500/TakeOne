@@ -2,7 +2,7 @@
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { getPaymentProvider } from '@takeone/providers';
-import { campaignCharge, licensePrice, type LicensePricing, type LicenseType } from '@takeone/shared';
+import { campaignCharge, LICENSE_LABELS, licensePrice, type LicensePricing, type LicenseType } from '@takeone/shared';
 import type { ActionResult } from './actions';
 import { supabaseServer } from './supabase-server';
 
@@ -49,7 +49,7 @@ export async function buyLicense(variantId: string, type: Exclude<LicenseType, '
   const base = await origin();
   const provider = getPaymentProvider({ country: (c.brands as unknown as { country: string } | null)?.country });
   const session = await provider.createCheckout({
-    kind: 'license', amountMinor: price, currency: c.currency, description: `${type} license: ${c.title}`,
+    kind: 'license', amountMinor: price, currency: c.currency, description: `${LICENSE_LABELS[type as keyof typeof LICENSE_LABELS] ?? 'Licence'}: ${c.title}`,
     successUrl: `${base}${reviewPath}`, cancelUrl: `${base}${reviewPath}`, metadata: { variant_id: variantId, license_type: type },
   });
   if (!session.paid) return { ok: true, data: { url: session.url } };

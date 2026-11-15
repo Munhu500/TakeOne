@@ -150,7 +150,19 @@ Real mode: set `DEMO_MODE=false`, add the keys in `.env.example`, set the `demo_
   (add `?theme=light` for light). The page is not linked anywhere and is admin-only when `NEXT_PUBLIC_DEMO_MODE=false`.
 - Real media: drop files into `apps/web/public/media` (`hero/take.mp4`, `products/<product-name-slug>.jpg`,
   `variants/<format_id>.mp4`). Until a file exists the slot shows a neutral frame. See the README in that folder.
-- Light mode is offered on the brand dashboard only. Agency white-label changes the accent colour only.
+- Accent: `accent-brand` (#7C5CFF) is for the logo mark, indicators, focus rings and active underlines. `accent` (#6A4BF0)
+  is the filled button and always carries a white label; hover and pressed step darker.
+- Light mode is offered on the brand dashboard only. Agency white-label changes the accent tokens only; an agency's
+  fill is darkened automatically until a white label reaches 4.5:1.
+
+### Writing style
+
+- **British English** everywhere a person reads: the web app, emails, PDFs and demo data. "licence" (noun: "renew this
+  licence"), "license" (verb: "license this variant", "licensed"), "colour", "organise", "cancelled".
+- Code identifiers, table names, routes and CSS keep their existing spelling (`licenses`, `purchase_license`, `color`).
+- Statuses come from one vocabulary (`components/ui/status.tsx`). Dates read "15 Nov 2026". Money has no decimals in
+  summaries. Never say the product is "live" in public copy; a campaign can be live.
+- "Partnership ad", never "whitelist". No emoji.
 
 ## Static preview (plain Apache hosting, e.g. Hostinger)
 

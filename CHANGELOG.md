@@ -12,6 +12,9 @@
 - Demo data: illustrated product images and cartoon variant footage removed; neutral frames until real media is added
   under `apps/web/public/media`.
 - Mobile is untouched apart from one line of copy; follow-ups are in `TODO_MOBILE.md`.
+- Follow-up decisions: accent fill `#6A4BF0` with white labels (hover `#5B3DE0`, pressed darker), `accent-brand`
+  `#7C5CFF` for marks, indicators, focus rings and underlines; agency fills auto-darken to AA with white labels.
+  British English standard (README), migration `20260101000009_british_english.sql`.
 
 ## Static preview build
 - `pnpm build:preview`: Next.js static export + Expo web export under `/app`, `.htaccess`, secret scan, `takeone-preview.zip` for plain Apache hosting.

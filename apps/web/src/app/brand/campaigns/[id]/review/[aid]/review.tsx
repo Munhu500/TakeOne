@@ -102,7 +102,7 @@ export function Review(p: Props) {
           const u = usage(v);
           const isWinner = p.assignment.winning_variant_id === v.id;
           return (
-            <div key={v.id} className={cn('card flex flex-col gap-3 p-3', picked.includes(v.id) && 'border-accent', isWinner && 'border-border-strong')}>
+            <div key={v.id} className={cn('card flex flex-col gap-3 p-3', picked.includes(v.id) && 'border-accent-brand', isWinner && 'border-border-strong')}>
               <div className="relative">
                 <Player v={v} aspect={aspect} urls={p.urls} locked={locked} />
                 <div className="pointer-events-none absolute left-2 top-2 flex flex-col items-start gap-1"><Badge className="border-transparent bg-scrim text-on-media">#{i + 1} · {v.score}</Badge>{isWinner && <Badge className="bg-scrim text-on-media"><Trophy size={16} {...ICON} />Winner</Badge>}</div>

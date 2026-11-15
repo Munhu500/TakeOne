@@ -17,25 +17,45 @@ const surfacesLight = { bg: '#FAFAF9', 'surface-1': '#FFFFFF', 'surface-2': '#F4
 const status = { success: '#34D399', warning: '#FBBF24', danger: '#F87171' };
 
 export type ThemeName = 'dark' | 'light';
-export interface AccentTokens { accent: string; 'accent-hover': string; 'accent-soft': string; 'accent-text': string; 'on-accent': string; 'accent-fill-hover': string }
+export interface AccentTokens {
+  'accent-brand': string; accent: string; 'accent-hover': string; 'accent-pressed': string;
+  'accent-soft': string; 'accent-text': string; 'on-accent': string;
+}
+/** The filled accent the default brand colour resolves to, and its hover (both specified, not generated). */
+export const DEFAULT_ACCENT_FILL = '#6A4BF0';
+const DEFAULT_ACCENT_HOVER = '#5B3DE0';
+const AA = 4.5;
+const STEP = 0.12;
+
+/** Darkens a colour in small steps until a white label on it reaches AA. Colours that already pass are untouched. */
+export function fillFor(brand: string): string {
+  let c = brand;
+  for (let i = 0; i < 100 && contrast(WHITE, c) < AA; i++) c = mix(c, BLACK, 0.02);
+  return c;
+}
 
 /**
- * An agency's brand colour replaces only these tokens. Hover/soft/text variants are generated, and the label colour
- * on an accent fill is whichever of ink/white reads better, so any brand colour stays legible.
+ * An agency's brand colour replaces only these tokens.
+ * - `accent-brand` is the colour itself: logo mark, indicators, focus rings, active underlines.
+ * - `accent` is the filled button. Its label is always white, so the fill is darkened automatically until white
+ *   reaches 4.5:1; hover and pressed step darker again, which only increases the label's contrast.
+ * - `accent-text` and `accent-soft` are for links and tinted badges.
  */
-export function deriveAccent(accent: string, theme: ThemeName = 'dark'): AccentTokens {
+export function deriveAccent(brand: string, theme: ThemeName = 'dark'): AccentTokens {
   const s = theme === 'dark' ? surfacesDark : surfacesLight;
-  const onAccent = contrast(INK, accent) >= contrast(WHITE, accent) ? INK : WHITE;
+  const isDefault = brand.toUpperCase() === DEFAULT_ACCENT;
+  const fill = isDefault ? DEFAULT_ACCENT_FILL : fillFor(brand);
+  const hover = isDefault ? DEFAULT_ACCENT_HOVER : mix(fill, BLACK, STEP);
   // text-coloured accent (links, badges, key numbers) must reach AA on every surface, including its own soft tint
-  const backgrounds = [...Object.values(s), over(accent, SOFT, s['surface-1']), over(accent, SOFT, s['surface-3'])];
+  const backgrounds = [...Object.values(s), over(brand, SOFT, s['surface-1']), over(brand, SOFT, s['surface-3'])];
   return {
-    accent,
-    'accent-hover': mix(accent, BLACK, 0.12),
-    'accent-soft': alpha(accent, SOFT),
-    'accent-text': ensureContrast(accent, theme === 'dark' ? WHITE : BLACK, backgrounds),
-    'on-accent': onAccent,
-    // the filled button moves toward its label's opposite on hover, so the label never loses contrast
-    'accent-fill-hover': mix(accent, onAccent === INK ? WHITE : BLACK, 0.12),
+    'accent-brand': brand,
+    accent: fill,
+    'accent-hover': hover,
+    'accent-pressed': mix(hover, BLACK, STEP),
+    'accent-soft': alpha(brand, SOFT),
+    'accent-text': ensureContrast(brand, theme === 'dark' ? WHITE : BLACK, backgrounds),
+    'on-accent': WHITE,
   };
 }
 
@@ -55,8 +75,6 @@ function theme(name: ThemeName) {
     // spec value #71717A is below AA on raised surfaces; nudged the minimum amount that passes on every surface
     'text-tertiary': ensureContrast('#71717A', dark ? WHITE : BLACK, all),
     ...a,
-    // spec: accent-hover #6A4BF0 for the default accent
-    'accent-hover': '#6A4BF0',
     ...status,
     'success-soft': alpha(status.success, SOFT), 'warning-soft': alpha(status.warning, SOFT), 'danger-soft': alpha(status.danger, SOFT),
     'success-text': statusText(status.success), 'warning-text': statusText(status.warning), 'danger-text': statusText(status.danger),

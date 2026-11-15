@@ -20,8 +20,9 @@ the only mobile change so far is one line of copy ("whitelisting" → "partnersh
 - Adopt `@takeone/design-tokens` (colours, type scale, 4pt spacing, radii, motion presets) in `src/theme`. The presets are
   plain objects so they can drive Reanimated/Moti.
 - Fonts: Geist, Geist Mono, Instrument Serif via `expo-font` (files are in `apps/web/src/fonts`).
-- Colour changes to carry over: tertiary text and accent-as-text were lightened to meet WCAG AA; labels on the filled
-  accent are near-black, not white.
+- Colour changes to carry over: tertiary text `#898991` and accent text `#9980FF` (dark) meet WCAG AA; the filled accent
+  is `#6A4BF0` with a white label, and `#7C5CFF` stays as `accent-brand` for marks, indicators and focus rings.
+- British English in all copy: "licence" (noun), "license" (verb), "colour", "cancelled".
 - Status vocabulary: reuse the labels in `apps/web/src/components/ui/status.tsx` (move the table to `packages/shared`).
 - Remove emoji flags and the star glyph; use drawn flags and "rating 4.8".
 - Method labels: "UPI", not "Upi".

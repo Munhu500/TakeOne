@@ -50,7 +50,7 @@ const ok = (name, pass, note = '') => { results.push(`${pass ? 'PASS' : 'FAIL'} 
   p = await open();
   await p.goto(BASE + '/agency/?agency=mirage');
   const branded = await see(p, 'Mirage Media') && await see(p, 'Your Mirage Media campaign workspace');
-  const accent = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+  const accent = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent-brand').trim());
   ok('/agency/?agency=mirage shows agency branding', branded && accent.toUpperCase() === '#E0A526' && !(await p.getByText('TakeOne', { exact: true }).count()), `accent ${accent}, title "${await p.title()}"`);
   await p.screenshot({ path: `${SHOTS}/pv-agency-login.png` });
   await login(p, 'agency@takeone.demo');
@@ -66,7 +66,7 @@ const ok = (name, pass, note = '') => { results.push(`${pass ? 'PASS' : 'FAIL'} 
   ok('/admin/ loads the QA queue', await see(p, 'QA queue') && p.url().includes('/admin/qa/'), p.url().replace(BASE, ''));
   await p.screenshot({ path: `${SHOTS}/pv-admin-qa.png` });
   await p.goto(BASE + '/admin/settings/'); await p.reload();
-  ok('refresh on admin deep link', await see(p, 'FX rates') && await see(p, 'License prices'));
+  ok('refresh on admin deep link', await see(p, 'FX rates') && await see(p, 'Licence prices'));
   await p.context().close();
 
   // 5. creator app under /app

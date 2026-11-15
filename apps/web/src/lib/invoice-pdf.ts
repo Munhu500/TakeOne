@@ -1,5 +1,5 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import { color, DEFAULT_ACCENT, INK, PAPER, parseHex } from '@takeone/design-tokens';
+import { color, DEFAULT_ACCENT, deriveAccent, INK, PAPER, parseHex } from '@takeone/design-tokens';
 import { agencyInvoiceLine, CURRENCIES, LICENSE_DEFAULTS, LICENSE_LABELS, type CurrencyCode, type LicenseType } from '@takeone/shared';
 
 /** Columns the invoice needs; the same select is used by the API route and the static-preview button. */
@@ -34,7 +34,9 @@ export async function buildInvoicePdf(p: InvoicePayment): Promise<Uint8Array> {
   const credit = agency ? 0 : Number(p.credit_applied_minor);
   const total = agency ? line.clientTotalMinor : Number(p.amount_minor);
   const issuer = agency?.name ?? 'TakeOne';
-  const accent = pdfColor(agency?.primary_color ?? DEFAULT_ACCENT);
+  // header band carries a white label, so it uses the generated fill; the status word uses the accent text colour for paper
+  const a = deriveAccent(agency?.primary_color ?? DEFAULT_ACCENT, 'light');
+  const accent = pdfColor(a.accent), accentText = pdfColor(a['accent-text']);
 
   const pdf = await PDFDocument.create();
   const page = pdf.addPage([595, 842]);
@@ -50,7 +52,7 @@ export async function buildInvoicePdf(p: InvoicePayment): Promise<Uint8Array> {
   text('Billed to', 50, 740, 9, font, grey); text(brand.name, 50, 724, 13, bold);
   right(`Invoice ${String(p.id).slice(0, 8).toUpperCase()}`, 740, 10, bold);
   right(new Date(p.created_at).toISOString().slice(0, 10), 724, 10, font, grey);
-  right(p.status === 'refunded' ? 'REFUNDED' : 'PAID', 708, 10, bold, accent);
+  right(p.status === 'refunded' ? 'REFUNDED' : 'PAID', 708, 10, bold, accentText);
 
   let y = 660;
   text('Description', 50, y, 9, bold, grey); right('Amount', y, 9, bold, grey);
