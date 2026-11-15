@@ -1,5 +1,5 @@
 // Static preview: no server, so drafts come from the same deterministic logic as the demo-mode mock provider.
-import type { Brief, ShotList } from '@takeone/shared';
+import { demoProductDraft, type Brief, type ShotList } from '@takeone/shared';
 import type { AiResult, DraftProduct } from './ai';
 
 export type { AiResult, DraftProduct } from './ai';
@@ -11,7 +11,7 @@ export async function draftProduct(url: string): Promise<AiResult<DraftProduct>>
   const name = slug.replace(/\b\w/g, (c) => c.toUpperCase()).slice(0, 80) || 'Your product';
   return {
     ok: true, provider: 'mock', fetched: false,
-    data: { product_name: name, description: `${name} from ${u.hostname.replace(/^www\./, '')}. (Preview build: replace this with your own description. The full deployment reads the page for you.)`, key_benefits: ['Solves an everyday problem', 'Easy to use from day one', 'Looks great on camera'], images: [] },
+    data: { product_name: name, ...demoProductDraft(name), images: [] },
   };
 }
 export async function draftShotList(product_name: string, brief: Brief): Promise<AiResult<ShotList>> {

@@ -94,16 +94,21 @@ export function compactLocal(amountMinor: number, currency: string): string {
   return `${prefix}${major}`;
 }
 
-const BANDS_USD_MINOR = [0, 10_000, 50_000, 100_000, 250_000, 500_000, 1_000_000, 2_500_000];
-/** Earnings are shown as a band ("₹4.2L+ this month") unless the creator opts in to exact figures. */
+/** Band floors in whole units of each currency. Bands are set per market, not converted from one another. */
+const EARNINGS_BANDS: Record<CurrencyCode, number[]> = {
+  INR: [25_000, 50_000, 100_000, 200_000, 300_000, 500_000, 800_000, 1_200_000, 2_000_000],
+  AED: [1_000, 2_500, 5_000, 10_000, 15_000, 25_000, 40_000, 60_000],
+  USD: [100, 500, 1_000, 2_500, 5_000, 10_000, 25_000],
+};
+/** Earnings are shown as a band ("₹3L+ this month", "AED 15K+") unless the creator opts in to exact figures. */
 export function earningsBand(amountMinor: number, currency: string, viewer: string, rates?: FxRates, suffix = ''): string {
   const v = isCurrency(viewer) ? viewer : 'USD';
-  const usd = convertMinor(amountMinor, isCurrency(currency) ? currency : 'USD', 'USD', rates);
-  let floor = 0;
-  for (const b of BANDS_USD_MINOR) if (usd >= b) floor = b;
+  const unit = 10 ** CURRENCIES[v].decimals;
+  const amount = convertMinor(amountMinor, isCurrency(currency) ? currency : 'USD', v, rates) / unit;
+  const bands = EARNINGS_BANDS[v];
+  const floor = bands.filter((b) => amount >= b).pop();
   const tail = suffix ? ` ${suffix}` : '';
-  const local = (usdMinor: number) => compactLocal(convertMinor(usdMinor, 'USD', v, rates), v);
-  return floor === 0 ? `Under ${local(BANDS_USD_MINOR[1]!)}${tail}` : `${local(floor)}+${tail}`;
+  return floor === undefined ? `Under ${compactLocal(bands[0]! * unit, v)}${tail}` : `${compactLocal(floor * unit, v)}+${tail}`;
 }
 /** Exact earnings for creators who opted in: whole units only, never paise or fils. */
 export function exactEarnings(amountMinor: number, currency: string, viewer: string, rates?: FxRates): string {

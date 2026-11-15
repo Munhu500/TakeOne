@@ -24,6 +24,11 @@ the only mobile change so far is one line of copy ("whitelisting" → "partnersh
   campaign instead of `LICENSE_DEFAULTS.termDays`.
 - **Demo creators were renamed** so names match countries. Nothing to change, but screenshots will differ.
 
+- **Creator Pro price is fixed per market** (`pro_prices` setting; `proPriceFor(country)` in shared). The Pro screen's
+  button was updated to use it (one line); check any other place the price is shown.
+- **Earnings bands are per market** (`earningsBand` now returns ₹25K+ … ₹20L+ and AED 1K+ … 60K+).
+- **Display names:** use `categoryLabel` and `countryName` from shared instead of raw values.
+
 ## Design system (when mobile is restyled)
 - Adopt `@takeone/design-tokens` (colours, type scale, 4pt spacing, radii, motion presets) in `src/theme`. The presets are
   plain objects so they can drive Reanimated/Moti.

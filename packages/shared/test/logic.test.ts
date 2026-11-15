@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  availableAt, campaignInputSchema, canTransition, compactLocal, creatorScore, earningsBand, exactEarnings, MAIN_BOARD_MIN_COMPLETED, effectiveTier, evaluateGuarantee, FORMAT_LIST, formatsForTier, isRisingStar, maskContactInfo,
+  availableAt, campaignInputSchema, canTransition, categoryLabel, compactLocal, countryName, productShortName, proPriceFor, creatorScore, earningsBand, exactEarnings, MAIN_BOARD_MIN_COMPLETED, effectiveTier, evaluateGuarantee, FORMAT_LIST, formatsForTier, isRisingStar, maskContactInfo,
   mockPublicMetrics, nextLedgerState, onboardingSchema, rankBrands, rankCreators, scoreMetricPlausibility, shouldFlagUser, sumBalances, V1_FORMATS, validateWithdrawal,
   withdrawalMethodsFor, withdrawalSchema,
 } from '../src';
@@ -166,9 +166,14 @@ describe('leaderboard ranking', () => {
   it('shows earnings as bands', () => {
     expect(earningsBand(6_200_00, 'USD', 'USD', undefined, 'this month')).toBe('$5K+ this month');
     expect(earningsBand(50_00, 'USD', 'USD')).toBe('Under $100');
-    // local style, no minor units: lakh for India, K for the UAE
-    expect(earningsBand(6_200_00, 'USD', 'INR')).toBe('₹4.2L+');
-    expect(earningsBand(6_200_00, 'USD', 'AED')).toBe('AED 18.3K+');
+    // each market has its own bands, in local style with no minor units
+    expect(earningsBand(4_20_000_00, 'INR', 'INR')).toBe('₹3L+');
+    expect(earningsBand(60_000_00, 'INR', 'INR')).toBe('₹50K+');
+    expect(earningsBand(13_00_000_00, 'INR', 'INR')).toBe('₹12L+');
+    expect(earningsBand(10_000_00, 'INR', 'INR')).toBe('Under ₹25K');
+    expect(earningsBand(3_000_00, 'AED', 'AED')).toBe('AED 2.5K+');
+    expect(earningsBand(17_500_00, 'AED', 'AED')).toBe('AED 15K+');
+    expect(earningsBand(6_200_00, 'USD', 'AED')).toBe('AED 15K+');
     expect(compactLocal(420_000_00, 'INR')).toBe('₹4.2L');
     expect(compactLocal(1_500_000_00, 'AED')).toBe('AED 1.5M');
     expect(compactLocal(15_000_00, 'AED')).toBe('AED 15K');
@@ -209,5 +214,27 @@ describe('guarantee, formats, schemas', () => {
     expect(withdrawalSchema.safeParse({ method: 'upi', amount_minor: 100.5, destination: { upi_id: 'a@upi' } }).success).toBe(false);
     expect(withdrawalSchema.safeParse({ method: 'upi', amount_minor: 100, destination: { upi_id: 'a@upi' } }).success).toBe(true);
     expect(campaignInputSchema.safeParse({ title: 'x' }).success).toBe(false);
+  });
+});
+
+describe('display names and market prices', () => {
+  it('shows names, never stored values', () => {
+    expect(categoryLabel('beauty')).toBe('Beauty');
+    expect(countryName('IN')).toBe('India');
+    expect(countryName('AE')).toBe('United Arab Emirates');
+  });
+  it('picks a short product name', () => {
+    expect(productShortName('Invisible Sunscreen SPF 50')).toBe('SPF');
+    expect(productShortName('Vitamin C Glow Serum')).toBe('VC');
+    expect(productShortName('Night Repair Retinol Cream')).toBe('NR');
+    expect(productShortName('Falcon Buds Pro', 'fb')).toBe('FB');
+    expect(productShortName('Serum')).toBe('S');
+  });
+  it('Creator Pro is a fixed price per market, not an FX conversion', () => {
+    expect(proPriceFor('IN')).toEqual({ currency: 'INR', minor: 69_900 });
+    expect(proPriceFor('AE')).toEqual({ currency: 'AED', minor: 6_900 });
+    expect(proPriceFor('GB')).toEqual({ currency: 'USD', minor: 1_900 });
+    expect(proPriceFor(null)).toEqual({ currency: 'USD', minor: 1_900 });
+    expect(proPriceFor('IN', { default: { currency: 'USD', minor: 2_900 }, IN: { currency: 'INR', minor: 79_900 } }).minor).toBe(79_900);
   });
 });

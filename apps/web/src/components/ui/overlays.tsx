@@ -10,12 +10,12 @@ import { Button, ICON } from './index';
 
 const FLOAT = 'z-dropdown rounded-md border border-border-strong bg-surface-2 shadow-float';
 
-export function Tooltip({ label, children }: { label: string; children: ReactNode }) {
+export function Tooltip({ label, children, side, className }: { label: string; children: ReactNode; side?: 'top' | 'right' | 'bottom' | 'left'; /** e.g. "xl:hidden" for tips that only matter while a label is hidden */ className?: string }) {
   return (
     <Tip.Provider delayDuration={300}>
       <Tip.Root>
         <Tip.Trigger asChild>{children}</Tip.Trigger>
-        <Tip.Portal><Tip.Content sideOffset={8} className={cn(FLOAT, 'z-toast rounded-sm px-3 py-2 text-caption text-primary')}>{label}</Tip.Content></Tip.Portal>
+        <Tip.Portal><Tip.Content side={side} sideOffset={8} className={cn(FLOAT, 'z-toast rounded-sm px-3 py-2 text-caption text-primary', className)}>{label}</Tip.Content></Tip.Portal>
       </Tip.Root>
     </Tip.Provider>
   );

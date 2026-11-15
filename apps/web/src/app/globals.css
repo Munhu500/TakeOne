@@ -40,6 +40,26 @@
   .data-table tbody tr { @apply h-row border-b border-border transition-colors duration-fast last:border-b-0 hover:bg-surface-3; }
   .data-table td { @apply px-4 py-2 align-middle; }
   /* Filter chips (links or buttons) */
-  .chip { @apply inline-flex h-control-sm items-center gap-2 whitespace-nowrap rounded-full border border-border px-4 text-small capitalize text-secondary transition duration-fast ease-standard hover:border-border-strong hover:text-primary active:scale-press; }
+  .chip { @apply inline-flex h-control-sm items-center gap-2 whitespace-nowrap rounded-full border border-border px-4 text-small text-secondary transition duration-fast ease-standard hover:border-border-strong hover:text-primary active:scale-press; }
   .chip[aria-pressed='true'], .chip[aria-checked='true'], .chip[aria-current='true'], .chip.is-on { @apply border-transparent bg-inverse text-on-inverse; }
+}
+
+@layer components {
+  /* Placeholders adapt to the size of their own frame, not the screen */
+  .frame-fit { container-type: inline-size; }
+  .frame-name { display: none; }
+  .frame-fit[data-show='name'] .frame-caption { display: none; }
+  .frame-fit[data-show='name'] .frame-name { display: block; }
+  @container (max-width: 199px) { .frame-caption { display: none; } .frame-name { display: block; } }
+  @container (max-width: 71px) { .frame-name, .frame-fit[data-show='name'] .frame-name { display: none; } }
+  .frame-initials { font-size: clamp(0.75rem, 30cqw, 1.375rem); letter-spacing: 0.02em; }
+
+  /* Full-bleed reel: the first card lines up with the page column, the row runs to the right edge of the screen */
+  .reel { padding-inline: max(var(--gutter), calc((100vw - var(--content-max)) / 2 + var(--gutter))) var(--gutter); scroll-padding-inline-start: max(var(--gutter), calc((100vw - var(--content-max)) / 2 + var(--gutter))); scrollbar-width: none; }
+  .reel::-webkit-scrollbar { display: none; }
+  /* The right edge fades into the page to show the row continues */
+  .fade-right { background: linear-gradient(to left, var(--bg), transparent); }
+  /* Quiet backdrop for a full-bleed section with no image: a soft vignette and fine grain */
+  .vignette { background: radial-gradient(ellipse 80% 70% at 50% 40%, var(--surface-2), var(--bg) 75%); }
+  .grain { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E"); opacity: 0.06; mix-blend-mode: overlay; }
 }

@@ -44,7 +44,12 @@ export function daysLeftLabel(d: string | Date): string {
   return n > 0 ? `${pluralise(n, 'day')} left` : n === 0 ? 'Ends today' : 'Ended';
 }
 /** Dates read "15 Nov 2026" everywhere. */
-export const fmtDate = (d: string | Date) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** One date format everywhere, with three-letter months: "30 Sep 2026" (the browser's own en-GB short form says "Sept"). */
+export function fmtDate(d: string | Date): string {
+  const x = new Date(d);
+  return Number.isNaN(x.getTime()) ? '—' : `${x.getDate()} ${MONTHS[x.getMonth()]} ${x.getFullYear()}`;
+}
 
 /** Sentence case for labels and statuses: "in_progress" → "In progress". Known acronyms stay upper-case. */
 const ACRONYMS = /\b(upi|ifsc|iban|kyc|pan|qa|ai|api|id|uae|usd|inr|aed|fx|pdf|url)\b/gi;

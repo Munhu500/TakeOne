@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { extractedProductSchema, FORMATS, shotListSchema, type Brief, type ExtractedProduct, type FormatId, type ShotList } from '@takeone/shared';
+import { demoProductDraft, extractedProductSchema, FORMATS, shotListSchema, type Brief, type ExtractedProduct, type FormatId, type ShotList } from '@takeone/shared';
 import { z } from 'zod';
 import { useReal } from './env';
 
@@ -130,8 +130,7 @@ export class MockLlm implements LlmProvider {
     const name = (title ?? slug).split(/[|–—-]/)[0]!.trim().replace(/\b\w/g, (c) => c.toUpperCase()).slice(0, 80) || 'Your product';
     return {
       product_name: name,
-      description: `${name} from ${new URL(url).hostname.replace(/^www\./, '')}. (Demo mode: replace this with your own description — connect an Anthropic API key to extract it from the page automatically.)`,
-      key_benefits: ['Solves an everyday problem', 'Easy to use from day one', 'Looks great on camera'],
+      ...demoProductDraft(name),
       images: imageUrls.slice(0, 4),
     };
   }

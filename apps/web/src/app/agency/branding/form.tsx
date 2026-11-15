@@ -8,7 +8,7 @@ import { checkDomain, type DomainStatus } from '@/lib/domain';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Avatar, Badge, Button, Card, ICON, Input } from '@/components/ui';
 import { toast } from '@/components/ui/toast';
-import { assetUrl, cn } from '@/lib/utils';
+import { assetUrl, cn, initials } from '@/lib/utils';
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
@@ -60,6 +60,8 @@ export function BrandingForm({ agency, userId, cnameTarget }: Props) {
   }
   const cname = `${f.subdomain.toLowerCase().trim() || 'your-domain'}  CNAME  ${cnameTarget}`;
   const logo = assetUrl(f.logo);
+  // the uploaded logo, or an initials tile in the agency colour until there is one
+  const mark = logo ? <Avatar name={f.name} src={f.logo} size="sm" square /> : <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-sm text-caption font-semibold" style={{ background: a.accent, color: a['on-accent'] }}>{initials(f.name || 'Your agency')}</span>;
 
   return (
     <div className="grid gap-6 xl:grid-cols-2">
@@ -118,7 +120,7 @@ export function BrandingForm({ agency, userId, cnameTarget }: Props) {
         <div className="overflow-hidden rounded-lg border border-border bg-bg">
           <div className="border-b border-border px-4 py-2 text-caption text-tertiary">https://{f.subdomain || 'your-domain'}/login</div>
           <div className="mx-auto max-w-xs px-6 py-8">
-            <div className="flex items-center gap-3 text-body-lg font-semibold">{logo && <Avatar name={f.name} src={f.logo} size="sm" square />}{f.name || 'Your agency'}</div>
+            <div className="flex items-center gap-3 text-body-lg font-semibold">{mark}{f.name || 'Your agency'}</div>
             <div className="mt-6 text-h3">Sign in</div>
             <div className="mt-1 text-small text-secondary">Your campaign workspace</div>
             <div className="mt-5 h-input rounded-sm border border-border bg-surface-2" /><div className="mt-3 h-input rounded-sm border border-border bg-surface-2" />
@@ -128,7 +130,7 @@ export function BrandingForm({ agency, userId, cnameTarget }: Props) {
         </div>
         <div className="overflow-hidden rounded-lg border border-border bg-bg">
           <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-            <div className="flex items-center gap-3 text-small font-semibold">{logo ? <Avatar name={f.name} src={f.logo} size="sm" square /> : null}{f.name || 'Your agency'}<span className="font-normal text-tertiary">› Client › Campaigns</span></div>
+            <div className="flex items-center gap-3 text-small font-semibold">{mark}{f.name || 'Your agency'}<span className="font-normal text-tertiary">› Client › Campaigns</span></div>
             <Bell size={20} {...ICON} className="text-secondary" aria-hidden />
           </div>
           <div className="flex gap-4 p-4">

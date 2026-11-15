@@ -1,13 +1,14 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { fmtDate } from './utils';
 import { color, DEFAULT_ACCENT, deriveAccent, INK, PAPER, parseHex } from '@takeone/design-tokens';
 import { agencyInvoiceLine, CURRENCIES, LICENSE_DEFAULTS, LICENSE_LABELS, type CurrencyCode, type LicenseType } from '@takeone/shared';
 
 /** Columns the invoice needs; the same select is used by the API route and the static-preview button. */
-export const INVOICE_SELECT = '*, campaigns(title), brands(name, country, markup_bps, agency_id, agencies(name, primary_color, markup_default_bps))';
+export const INVOICE_SELECT = '*, campaigns(title), brands(name, country, markup_bps, agency_id, agencies(name, logo, primary_color, markup_default_bps))';
 export interface InvoicePayment {
   id: string; kind: string; status: string; created_at: string; currency: string; gross_minor: number | string; amount_minor: number | string; credit_applied_minor: number | string; metadata: unknown;
   campaigns: { title: string } | null;
-  brands: { name: string; country: string; markup_bps: number | null; agencies: { name: string; primary_color: string; markup_default_bps: number } | null };
+  brands: { name: string; country: string; markup_bps: number | null; agencies: { name: string; logo?: string | null; primary_color: string; markup_default_bps: number } | null };
 }
 
 // The built-in PDF fonts are Latin-only, so amounts print with the currency code instead of ₹.
@@ -26,7 +27,7 @@ function pdfColor(hexColor: string) {
  * Agency clients get an agency-branded invoice at the agency's marked-up price; TakeOne is never mentioned on it.
  * The 75/25 split is always calculated on the standard price, not on the markup.
  */
-export async function buildInvoicePdf(p: InvoicePayment, opts: { view?: 'client' | 'cost' } = {}): Promise<Uint8Array> {
+export async function buildInvoicePdf(p: InvoicePayment, opts: { view?: 'client' | 'cost'; /** the issuer's mark: TakeOne's public/brand/logo-mark.png, or the agency's own logo (PNG or JPG) */ logo?: { bytes: Uint8Array; type: 'png' | 'jpg' } | null } = {}): Promise<Uint8Array> {
   const brand = p.brands;
   // 'cost' is the agency's own invoice from TakeOne at the standard price; 'client' (default) is what the client is billed
   const agency = opts.view === 'cost' ? null : brand.agencies;
@@ -49,11 +50,20 @@ export async function buildInvoicePdf(p: InvoicePayment, opts: { view?: 'client'
   const right = (t: string, y: number, size = 10, f = font, color = ink) => text(t, 545 - f.widthOfTextAtSize(t, size), y, size, f, color);
 
   page.drawRectangle({ x: 0, y: 782, width: 595, height: 60, color: accent });
-  text(issuer, 50, 805, 20, bold, paper);
+  let nameX = 50;
+  if (opts.logo) {
+    try {
+      const img = opts.logo.type === 'png' ? await pdf.embedPng(opts.logo.bytes) : await pdf.embedJpg(opts.logo.bytes);
+      const h = 32, w = Math.min(120, (img.width / img.height) * h);
+      page.drawImage(img, { x: 50, y: 796, width: w, height: h });
+      nameX = 50 + w + 12;
+    } catch { /* an unreadable logo never blocks an invoice: fall back to the name alone */ }
+  }
+  text(issuer, nameX, 805, 20, bold, paper);
   right('INVOICE', 808, 12, bold, paper);
   text('Billed to', 50, 740, 9, font, grey); text(billedTo, 50, 724, 13, bold);
   right(`Invoice ${String(p.id).slice(0, 8).toUpperCase()}`, 740, 10, bold);
-  right(new Date(p.created_at).toISOString().slice(0, 10), 724, 10, font, grey);
+  right(fmtDate(p.created_at), 724, 10, font, grey);
   right(p.status === 'refunded' ? 'REFUNDED' : 'PAID', 708, 10, bold, accentText);
 
   let y = 660;

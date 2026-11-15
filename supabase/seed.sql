@@ -36,6 +36,16 @@ declare
   -- odd = India, even = UAE (4 is moved to India below): every name matches its country and flag
   names text[] := array['Priya Sharma','Layla Al Mansoori','Ananya Iyer','Rohan Kapoor','Sneha Reddy','Omar Khalid','Kavya Nair','Fatima Al Falasi','Arjun Mehta','Zayed Al Hashimi','Meera Joshi','Noura Al Suwaidi','Vikram Singh','Hamdan Al Marri','Ishita Bose','Mariam Al Shamsi','Aditya Rao','Khalid Al Nuaimi','Tanvi Deshmukh','Aisha Al Ketbi','Karan Malhotra','Saif Al Zaabi','Riya Chatterjee','Hessa Al Mheiri','Dev Patel','Rashid Al Dhaheri','Pooja Menon','Latifa Al Qasimi','Nikhil Verma','Salama Al Ameri'];
   cats text[] := array['beauty','fashion','fitness','food','tech','lifestyle'];
+  -- applicant pitches; {p} is the product. Each applicant gets one, so no two cards on a campaign read the same by default
+  pitches text[] := array[
+    'My audience keeps asking what I actually use. {p} fits my routine, so the review would be real.',
+    'I can film {p} in natural light this weekend and deliver early.',
+    'I am picky about this category. If {p} works for me, my followers will trust it.',
+    'First-impression videos are what I do best, and {p} is exactly the kind of product that suits them.',
+    'I have a free shoot day on Friday and a clean setup ready for {p}.',
+    'Two of my last three videos in this category were picked as winners. Happy to do the same for {p}.',
+    'I would show {p} in a real day, not a studio. That is what my viewers respond to.',
+    'Short and simple: I like the brief, I like {p}, and I deliver on time.'];
   camp record; t uuid; fmt text; fmts text[] := array['hook_first','testimonial_tight','day_in_life','silent_montage','language_version'];
   soon text[] := array['unboxing_first_use','before_after','three_reasons','reaction_first_impression','comparison'];
   -- hooks and transcripts per take, so each matches its product (1 serum, 2 sunscreen, 3 hair mist)
@@ -92,6 +102,12 @@ begin
     insert into guarantee_tracking (creator_id, window_start) values (cid, now() - interval '25 days');
   end loop;
   update creators set win_rate = round(wins_count::numeric / greatest(submissions_count, 1), 4);
+  -- ratings track results, so the top of the board sits between 4.4 and 4.9
+  update creators set rating_avg = least(4.9, round((3.9 + win_rate * 1.3)::numeric, 1)) where campaigns_completed >= 3;
+  -- earnings follow results too, so the top of the board shows a believable spread rather than one band
+  update creator_monthly_stats m set earnings_usd_minor = (case when c.campaigns_completed >= 3 then 20000 + power(c.win_rate, 3) * 2600000 + (abs(hashtext(c.profile_id::text)) % 12) * 12000 else 4000 + (abs(hashtext(c.profile_id::text)) % 6) * 6000 end
+      * case when m.month = date_trunc('month', now())::date then 1 else 0.8 end)::bigint
+    from creators c where c.profile_id = m.creator_id;
   update creators set tier = 'pro', bio = 'Skincare obsessive from Mumbai. I test everything for 30 days before I say a word.', categories = array['beauty', 'lifestyle', 'food'] where profile_id = hero;
   update creators set tier = 'free', is_founding = false where profile_id = 'aaaaaaaa-0000-4000-8000-000000000004';
   update profiles set country = 'IN', currency = 'INR', locale = 'en-IN' where id = 'aaaaaaaa-0000-4000-8000-000000000004';
@@ -135,9 +151,12 @@ begin
     end if;
   end loop;
 
+  update campaigns set product_short_name = case right(id::text, 2) when '01' then 'VC' when '02' then 'SPF' when '03' then 'MC' when '04' then 'CB' when '05' then 'SR' when '06' then 'PB' when '07' then 'FB' when '08' then 'MG' when '09' then 'OR' when '10' then 'DD' when '11' then 'HC' when '12' then 'NR' end
+    where id::text like 'c0000000-0000-4000-8000-0000000000%';
+
   -- applicants on live/in-progress campaigns: creators from the campaign's country whose categories overlap
   insert into applications (campaign_id, creator_id, pitch, status, created_at)
-  select c.id, cr.profile_id, 'I already use products like this daily and can shoot this week.', case when row_number() over (partition by c.id order by cr.win_rate desc) = 2 then 'shortlisted' else 'applied' end, now() - make_interval(hours => (row_number() over ())::int * 3)
+  select c.id, cr.profile_id, replace(pitches[1 + abs(hashtext(c.id::text || cr.profile_id::text)) % 8], '{p}', c.product_name), case when row_number() over (partition by c.id order by cr.win_rate desc) = 2 then 'shortlisted' else 'applied' end, now() - make_interval(hours => (row_number() over ())::int * 3)
   from campaigns c join creators cr on cr.categories && c.categories join profiles p on p.id = cr.profile_id and p.country = any (c.countries)
   where c.status in ('live', 'in_progress') and cr.profile_id <> hero and (c.early_access_until <= now() or cr.tier = 'pro');
   -- hero: invited to the running shoes? no — invited to chai (same country), and has used 1 of 3 weekly applications as context for the free demo creator

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Plus, Sparkles, Trash2 } from 'lucide-react';
-import { campaignCharge, CATEGORIES, COUNTRIES, CURRENCIES, LICENSE_TERM, type Brief, type CurrencyCode, type ShotList } from '@takeone/shared';
+import { campaignCharge, CATEGORIES, categoryLabel, COUNTRIES, countryName, CURRENCIES, LICENSE_TERM, type Brief, type CurrencyCode, type ShotList } from '@takeone/shared';
 import { saveCampaign } from '@/lib/actions';
 import { payCampaign } from '@/lib/checkout';
 import { draftProduct, draftShotList } from '@/lib/ai';
@@ -66,7 +66,7 @@ export function CampaignWizard({ brand, includedVariants }: { brand: { id: strin
     const p = r.data;
     setD((x) => ({ ...x, product: p.product_name, title: x.title || `${p.product_name} launch`, images: p.images,
       brief: { ...x.brief, description: p.description, key_benefits: p.key_benefits, key_messages: x.brief.key_messages.length ? x.brief.key_messages : p.key_benefits.slice(0, 3), must_say: x.brief.must_say.length ? x.brief.must_say : [p.product_name] } }));
-    setNote(r.provider === 'mock' ? 'Demo mode filled in a starter draft. With the AI service connected, the page itself is read for you.' : r.fetched ? 'Drafted from the page. Check every line.' : 'The page could not be read, so this is a starter draft.');
+    setNote(r.provider === 'mock' ? 'Demo: we’ve filled in a starter draft. In the live product, details are read from your product page automatically.' : r.fetched ? 'Drafted from your product page. Check every line.' : 'We could not read that page, so this is a starter draft for you to edit.');
   }
   async function genShots() {
     setBusy('shots'); setError(null);
@@ -156,8 +156,8 @@ export function CampaignWizard({ brand, includedVariants }: { brand: { id: strin
               <ListField label="Must not say" value={d.brief.must_not_say} onChange={(v) => setBrief({ must_not_say: v })} hint="Hooks and edits never add product claims of their own." />
             </div>
             <Input id="aud" label="Audience" placeholder="Who is this for?" value={d.brief.target_audience} onChange={(e) => setBrief({ target_audience: e.target.value })} />
-            <div><span className="label">Categories</span><div className="flex flex-wrap gap-2">{CATEGORIES.map((c) => <button key={c} type="button" aria-pressed={d.categories.includes(c)} disabled={!d.categories.includes(c) && d.categories.length >= 4} className="chip disabled:opacity-40" onClick={() => set({ categories: toggle(d.categories, c) })}>{c}</button>)}</div></div>
-            <div><span className="label">Creator countries</span><div className="flex flex-wrap gap-2">{Object.entries(COUNTRIES).map(([code, c]) => <button key={code} type="button" aria-pressed={d.countries.includes(code)} className="chip" onClick={() => set({ countries: toggle(d.countries, code) })}><Flag code={code} />{c.name}</button>)}</div></div>
+            <div><span className="label">Categories</span><div className="flex flex-wrap gap-2">{CATEGORIES.map((c) => <button key={c} type="button" aria-pressed={d.categories.includes(c)} disabled={!d.categories.includes(c) && d.categories.length >= 4} className="chip disabled:opacity-40" onClick={() => set({ categories: toggle(d.categories, c) })}>{categoryLabel(c)}</button>)}</div></div>
+            <div><span className="label">Creator countries</span><div className="flex flex-wrap gap-2">{Object.keys(COUNTRIES).map((code) => <button key={code} type="button" aria-pressed={d.countries.includes(code)} className="chip" onClick={() => set({ countries: toggle(d.countries, code) })}><Flag code={code} />{countryName(code)}</button>)}</div></div>
             <label className="flex items-start gap-3 text-small">
               <input type="checkbox" className="mt-1 size-4 accent-accent" checked={d.brief.uses_ai_likeness} onChange={(e) => setBrief({ uses_ai_likeness: e.target.checked })} />
               <span className="text-secondary"><span className="text-primary">Allow AI scene and language versions.</span> Uses the creator’s likeness and voice only with their consent for this campaign. Those variants are marked AI-edited.</span>
@@ -205,7 +205,7 @@ export function CampaignWizard({ brand, includedVariants }: { brand: { id: strin
           <div className="space-y-6">
             <h2 className="text-h3">Review and fund escrow</h2>
             <dl className="grid gap-5 text-small sm:grid-cols-2">
-              {([['Campaign', d.title], ['Product', d.product], ['Creators', `${pluralise(d.creators, 'creator')} · ${d.countries.join(', ')}`], ['Categories', d.categories.join(', ')], ['Licence term', pluralise(d.term, 'day')], ['Deadline', fmtDate(d.deadline)], ['Shot list', pluralise(d.shots.shots.length, 'shot')], ['Included', `Up to ${includedVariants} variants per creator`]] as const).map(([k, v]) => (
+              {([['Campaign', d.title], ['Product', d.product], ['Creators', `${pluralise(d.creators, 'creator')} · ${d.countries.map(countryName).join(', ')}`], ['Categories', d.categories.map(categoryLabel).join(', ')], ['Licence term', pluralise(d.term, 'day')], ['Deadline', fmtDate(d.deadline)], ['Shot list', pluralise(d.shots.shots.length, 'shot')], ['Included', `Up to ${includedVariants} variants per creator`]] as const).map(([k, v]) => (
                 <div key={k}><dt className="text-caption text-tertiary">{k}</dt><dd className="mt-1">{v}</dd></div>
               ))}
             </dl>

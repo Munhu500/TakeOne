@@ -3,8 +3,9 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { preload } from 'react-dom';
 import { IMAGE_EXTS, mediaFile } from '@/components/ui/media';
-import { BadgeCheck, Lock, Scale, UserCheck } from 'lucide-react';
-import { Avatar, btn, ICON, ImageSlot } from '@/components/ui';
+import { ArrowRight, BadgeCheck, Lock, Scale, UserCheck } from 'lucide-react';
+import { Avatar, btn, ICON } from '@/components/ui';
+import { Logo } from '@/components/logo';
 import { MarketingProvider, type Audience } from '@/lib/marketing';
 import { assetUrl } from '@/lib/utils';
 import foundingCreators from '@/data/founding-creators.json';
@@ -54,7 +55,7 @@ function BrandResults() {
         <Link href={SIGNUP.brands} className={btn('primary', 'lg')}>Post your first campaign</Link>
         <Link href={DEMO_HREF} className={btn('secondary', 'lg')}>Book a demo</Link>
       </div>
-      <p className="mt-8 text-small text-secondary"><Link href="/agencies" className="underline-offset-4 transition-colors duration-fast hover:text-primary hover:underline">{RESULTS.agency}</Link></p>
+      <p className="mt-8"><Link href="/agencies" className="inline-flex items-center gap-2 text-body text-primary underline underline-offset-4 transition-colors duration-fast hover:text-secondary">{RESULTS.agency}<ArrowRight size={16} {...ICON} aria-hidden /></Link></p>
     </Section>
   );
 }
@@ -71,15 +72,32 @@ function Trust() {
 }
 
 function Live() {
+  const image = mediaFile('live/event', IMAGE_EXTS);
+  const copy = (
+    <>
+      <p className="caption-label">{LIVE.caption}</p>
+      <h2 className="mt-4 text-h1 lg:text-display">{LIVE.headline[0]} <Em>{LIVE.headline[1]}</Em></h2>
+      <p className={`mt-6 max-w-prose text-body-lg text-secondary ${image ? '' : 'mx-auto'}`}>{LIVE.sub}</p>
+    </>
+  );
+  // With an event photo: text left, photo right. Without one: centred on a quiet vignette, no empty half.
+  if (image) {
+    return (
+      <section id="live" className="scroll-mt-16 border-t border-border bg-bg">
+        <div className="container-page grid items-center gap-12 py-24 lg:grid-cols-2 lg:gap-16 lg:py-32">
+          <div>{copy}<div className="mt-8"><WaitlistForm /></div></div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={image} alt="TakeOne Live" loading="lazy" decoding="async" className="aspect-portrait w-full rounded-xl border border-border object-cover" />
+        </div>
+      </section>
+    );
+  }
   return (
-    <section id="live" className="relative scroll-mt-16 overflow-hidden border-t border-border bg-bg">
-      <ImageSlot media="live/event" alt="TakeOne Live" />
-      <div aria-hidden className="absolute inset-0 bg-scrim" />
-      <div className="container-page relative py-24 lg:py-32">
-        <p className="caption-label">{LIVE.caption}</p>
-        <h2 className="mt-4 max-w-3xl text-h1 lg:text-display">{LIVE.headline[0]} <Em>{LIVE.headline[1]}</Em></h2>
-        <p className="mt-6 max-w-prose text-body-lg text-secondary">{LIVE.sub}</p>
-        <div className="mt-8"><WaitlistForm /></div>
+    <section id="live" className="vignette relative scroll-mt-16 overflow-hidden border-t border-border">
+      <div aria-hidden className="grain pointer-events-none absolute inset-0" />
+      <div className="container-page relative flex flex-col items-center py-24 text-center lg:py-32">
+        {copy}
+        <div className="mt-8 flex w-full justify-center"><WaitlistForm centred /></div>
       </div>
     </section>
   );
@@ -125,7 +143,7 @@ export function MarketingFooter() {
           ))}
         </div>
         <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-8">
-          <p className="text-small text-tertiary">© 2026 TakeOne</p>
+          <div className="flex flex-wrap items-center gap-4"><Logo className="text-body" /><p className="text-small text-tertiary">© 2026 TakeOne</p></div>
           <CountrySelect />
         </div>
       </div>
@@ -161,7 +179,6 @@ export function LandingPage({ preselect }: { preselect?: Audience }) {
       <section id="formats" className="scroll-mt-16 border-t border-border py-16 lg:py-24">
         <div className="container-page"><h2 className="max-w-3xl text-h1">One take. Every format that wins.</h2></div>
         <div className="mt-12"><FormatsReel /></div>
-        <div className="container-page"><p className="mt-6 text-body text-secondary">New formats added every month.</p></div>
       </section>
       <Section id="leaderboard" tone="raised">
         <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-16">

@@ -1,4 +1,4 @@
-import type { CreatorPublic, SocialAccountPublic, Verification } from '@takeone/shared';
+import { categoryLabel, type CreatorPublic, type SocialAccountPublic, type Verification } from '@takeone/shared';
 import { Avatar, Badge, Flag, StatusBadge } from '@/components/ui';
 
 export function VerificationBadge({ v }: { v: Verification }) {
@@ -18,7 +18,7 @@ export function CreatorCard({ c, socials, rank, earnings, children }: { c: Creat
         <Avatar name={c.display_name} src={c.avatar} size="lg" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2"><span className="truncate text-body font-medium">{c.display_name}</span>{c.is_pro && <Badge tone="outline">Pro</Badge>}</div>
-          <div className="mt-1 flex items-center gap-2 text-caption capitalize text-secondary"><Flag code={c.country} />{c.categories.join(' · ')}</div>
+          <div className="mt-1 flex items-center gap-2 text-caption text-secondary"><Flag code={c.country} />{c.categories.map(categoryLabel).join(' · ')}</div>
         </div>
         {rank !== undefined && <div className="text-right"><div className="tabular text-body-lg font-semibold">#{rank}</div><div className="text-caption text-tertiary">Rank</div></div>}
       </div>

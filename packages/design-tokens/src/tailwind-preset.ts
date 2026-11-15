@@ -37,7 +37,7 @@ const preset: Partial<Config> = {
     blur: { locked: '24px' },
     aspectRatio: { auto: 'auto', square: '1 / 1', reel: '9 / 16', portrait: '4 / 5', video: '16 / 9' },
     extend: {
-      gridTemplateColumns: { 'main-aside': `minmax(0, 1fr) ${px(layout.aside)}`, 'aside-main': `${px(260)} minmax(0, 1fr)`, 'main-narrow': `minmax(0, 1fr) ${px(320)}`, 'auto-fill': 'auto minmax(0, 1fr)', 'fill-auto': 'minmax(0, 1fr) auto', 'shot-row': `${px(160)} minmax(0, 1fr) ${px(80)} auto` },
+      gridTemplateColumns: { /* cards fill the row: as many columns as fit at 20rem or wider, at most three in the dashboards' content width */ cards: `repeat(auto-fit, minmax(${px(320)}, 1fr))`, 'main-aside': `minmax(0, 1fr) ${px(layout.aside)}`, 'aside-main': `${px(260)} minmax(0, 1fr)`, 'main-narrow': `minmax(0, 1fr) ${px(320)}`, 'auto-fill': 'auto minmax(0, 1fr)', 'fill-auto': 'minmax(0, 1fr) auto', 'shot-row': `${px(160)} minmax(0, 1fr) ${px(80)} auto` },
       keyframes: { shimmer: { '0%': { backgroundPosition: '200% 0' }, '100%': { backgroundPosition: '-200% 0' } }, spin: { to: { transform: 'rotate(360deg)' } } },
       animation: { shimmer: 'shimmer 1.6s linear infinite', spin: 'spin 0.8s linear infinite' },
     },

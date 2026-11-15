@@ -97,6 +97,8 @@ export const LIVE = {
 export const PRICING = {
   free: ['Free', 'Join, apply to campaigns, get paid. Free forever.'],
   pro: ['Pro', 'About USD 19 a month, priced in your currency. Early access to campaigns, faster payouts, Multilingual Voice and Win Predictor.'],
+  /** India and the UAE see their own price, so the "about USD 19" line is dropped there. */
+  proFeatures: 'Early access to campaigns, faster payouts, Multilingual Voice and Win Predictor.',
   // "License" here is the verb, per the British English standard in the README.
   brands: ['No subscription. Pay per campaign.', 'Your budget goes into escrow. Creators keep 75%; TakeOne’s fee is 25%. License extra formats, renewals and partnership ads as you need them.'],
 } as const;
@@ -127,4 +129,4 @@ export const EXAMPLE_LEADERBOARD = [
   { name: 'Noura Haddad', country: 'AE', category: 'Beauty', winRate: 52, campaigns: 9, rating: '4.7', monthUsdMinor: 260_000 },
   { name: 'Kabir Rao', country: 'IN', category: 'Fitness', winRate: 49, campaigns: 10, rating: '4.7', monthUsdMinor: 180_000 },
 ] as const;
-export const EXAMPLE_WALLET = { IN: [1_800_000, 1_350_000, 2_700_000], AE: [80_000, 60_000, 120_000] } as const;
+export const EXAMPLE_WALLET = { IN: [1_800_000, 1_350_000, 2_700_000], AE: [80_000, 60_000, 120_000], OTHER: [22_000, 16_500, 33_000] } as const;

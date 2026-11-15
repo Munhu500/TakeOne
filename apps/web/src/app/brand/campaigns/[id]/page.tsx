@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { campaignCharge, earningsBand, exactEarnings, FORMATS, LICENSE_DEFAULTS, LICENSE_LABELS, type Brief, type FormatId, type LicenseType, type ShotList } from '@takeone/shared';
+import { campaignCharge, categoryLabel, countryName, earningsBand, exactEarnings, FORMATS, LICENSE_DEFAULTS, LICENSE_LABELS, type Brief, type FormatId, type LicenseType, type ShotList } from '@takeone/shared';
 import { getFx, requireBrand } from '@/lib/session';
 import { supabaseServer } from '@/lib/supabase-server';
 import { creatorsByIds, leaderboardRows, rankMap } from '@/lib/queries';
-import { Avatar, Badge, Card, EmptyState, LinkButton, Money, ProductImage, StatusBadge, statusLabel, Tabs, VideoFrame } from '@/components/ui';
+import { Avatar, Badge, Card, EmptyState, Flag, LinkButton, Money, ProductImage, StatusBadge, statusLabel, Tabs, VideoFrame } from '@/components/ui';
 import { RpcButton } from '@/components/client';
 import { Chat } from '@/components/chat';
 import { CreatorCard } from '@/components/creator-card';
@@ -47,7 +47,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   return (
     <>
       <div className="mb-6 flex flex-wrap items-center gap-5">
-        <ProductImage name={c.product_name} src={c.product_images?.[0]} ratio="square" radius="md" className="w-20" />
+        <ProductImage name={c.product_name} shortName={c.product_short_name} src={c.product_images?.[0]} ratio="square" radius="md" className="w-20" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3"><h1 className="text-h2">{c.title}</h1><StatusBadge kind="campaign" status={c.status} /></div>
           <p className="tabular mt-2 text-small text-secondary">Due {fmtDate(c.deadline)} · {money(charge.grossMinor)} budget · {money(Number(c.fee_per_creator_minor))} per creator · {pluralise(c.creators_needed, 'creator')}</p>
@@ -70,7 +70,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
               <div className="caption-label">Product</div>
               <h2 className="mt-3 text-h3">{c.product_name}</h2>
               <p className="mt-2 max-w-prose text-small text-secondary">{brief.description}</p>
-              <div className="mt-4 flex flex-wrap gap-2">{(c.categories as string[]).map((x) => <Badge key={x} className="capitalize">{x}</Badge>)}{(c.countries as string[]).map((x) => <Badge key={x} tone="outline">{x}</Badge>)}</div>
+              <div className="mt-4 flex flex-wrap gap-2">{(c.categories as string[]).map((x) => <Badge key={x}>{categoryLabel(x)}</Badge>)}{(c.countries as string[]).map((x) => <Badge key={x} tone="outline"><Flag code={x} />{countryName(x)}</Badge>)}</div>
             </Card>
             <Card>
               <div className="caption-label">Brief</div>

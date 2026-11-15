@@ -17,7 +17,7 @@ export default async function BrandHome() {
   const sb = await supabaseServer();
   const now = new Date();
   const [{ data: campaigns }, { data: licences }, notes] = await Promise.all([
-    sb.from('campaigns').select('id, title, product_name, product_images, status, creators_needed, fee_per_creator_minor, currency, deadline, created_at, assignments(id, status, creator_id, delivered_at)').eq('brand_id', s.brand.id).order('created_at', { ascending: false }),
+    sb.from('campaigns').select('id, title, product_name, product_short_name, product_images, status, creators_needed, fee_per_creator_minor, currency, deadline, created_at, assignments(id, status, creator_id, delivered_at)').eq('brand_id', s.brand.id).order('created_at', { ascending: false }),
     sb.from('licenses').select('variant_id, type, ends_at').eq('brand_id', s.brand.id),
     loadNotes(12),
   ]);
@@ -97,7 +97,7 @@ export default async function BrandHome() {
               const delivered = c.assignments.filter((a) => a.status === 'delivered').length;
               return (
                 <Link key={c.id} href={`/brand/campaigns/${c.id}`} className="flex min-h-row-media items-center gap-4 px-4 py-3 transition-colors duration-fast hover:bg-surface-3">
-                  <ProductImage name={c.product_name} src={c.product_images?.[0]} ratio="square" radius="sm" className="w-12" />
+                  <ProductImage name={c.product_name} shortName={c.product_short_name} src={c.product_images?.[0]} ratio="square" radius="sm" className="w-12" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-body font-medium">{c.title}</div>
                     <div className="tabular mt-1 truncate text-caption text-secondary"><Money minor={c.fee_per_creator_minor} currency={c.currency} /> per creator · due {fmtDate(c.deadline)}{delivered > 0 ? ` · ${delivered} to review` : ''}</div>

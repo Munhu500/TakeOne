@@ -4,7 +4,12 @@ import { currencyForCountry, type CurrencyCode } from '@takeone/shared';
 import { track } from './analytics';
 
 export type Audience = 'creators' | 'brands';
-export type Market = 'IN' | 'AE';
+/** India and the UAE are the launch markets; everyone else is 'OTHER' and is quoted in US dollars. */
+export type Market = 'IN' | 'AE' | 'OTHER';
+/** A first guess from the device's time zone, used only until the visitor picks a country. Nothing is sent anywhere. */
+function guessMarket(): Market {
+  try { const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; return /Kolkata|Calcutta/.test(tz) ? 'IN' : /Dubai|Muscat/.test(tz) ? 'AE' : 'OTHER'; } catch { return 'OTHER'; }
+}
 const AUDIENCE_KEY = 't1-audience', COUNTRY_KEY = 't1-country';
 
 interface Ctx { audience: Audience; setAudience: (a: Audience) => void; country: Market; setCountry: (c: Market) => void; currency: CurrencyCode }
@@ -23,11 +28,11 @@ export function MarketingProvider({ preselect, children }: { preselect?: Audienc
   useEffect(() => {
     if (preselect) write('session', AUDIENCE_KEY, preselect);
     else { const a = read('session', AUDIENCE_KEY); if (a === 'brands' || a === 'creators') setA(a); }
-    const c = read('local', COUNTRY_KEY); if (c === 'IN' || c === 'AE') setC(c);
+    const c = read('local', COUNTRY_KEY); setC(c === 'IN' || c === 'AE' ? c : guessMarket());
   }, [preselect]);
   const setAudience = useCallback((a: Audience) => { setA(a); write('session', AUDIENCE_KEY, a); track('audience_toggle', { audience: a }); }, []);
   const setCountry = useCallback((c: Market) => { setC(c); write('local', COUNTRY_KEY, c); track('country_change', { country: c }); }, []);
-  const value = useMemo(() => ({ audience, setAudience, country, setCountry, currency: currencyForCountry(country) }), [audience, setAudience, country, setCountry]);
+  const value = useMemo(() => ({ audience, setAudience, country, setCountry, currency: currencyForCountry(country === 'OTHER' ? 'US' : country) }), [audience, setAudience, country, setCountry]);
   return <MarketingContext.Provider value={value}>{children}</MarketingContext.Provider>;
 }
 export function useMarketing(): Ctx {

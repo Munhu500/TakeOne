@@ -9,3 +9,4 @@ export * from './guarantee';
 export * from './formats';
 export * from './schemas';
 export * from './types';
+export * from './labels';

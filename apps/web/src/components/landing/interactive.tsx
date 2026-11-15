@@ -4,11 +4,12 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, LazyMotion, m, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Check, ChevronDown, Menu, X } from 'lucide-react';
-import { convertMinor, earningsBand, PRO_PRICE_USD_MINOR, V1_FORMATS, waitlistSchema } from '@takeone/shared';
+import { ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
+import { earningsBand, proPriceFor, V1_FORMATS, waitlistSchema } from '@takeone/shared';
 import { motion as motionTokens } from '@takeone/design-tokens';
 import { Avatar, Badge, btn, Button, DemoPill, Flag, ICON, ProductImage, VideoFrame, type ButtonVariant, type ButtonSize } from '@/components/ui';
 import { IMAGE_EXTS, mediaFile } from '@/components/ui/media';
+import { Logo } from '@/components/logo';
 import { track } from '@/lib/analytics';
 import { useMarketing, type Audience, type Market } from '@/lib/marketing';
 import { cn, DEMO, money } from '@/lib/utils';
@@ -96,7 +97,7 @@ export function MarketingNav() {
   return (
     <header ref={ref} onFocus={() => setHidden(false)} className={cn('glass fixed inset-x-0 top-0 z-nav transition-transform duration-base ease-standard', !shown && '-translate-y-full')}>
       <div className="container-page flex h-16 items-center justify-between gap-4">
-        <div className="flex items-center gap-3"><Link href="/" className="rounded-sm text-body-lg font-semibold">TakeOne</Link>{DEMO && <DemoPill />}</div>
+        <div className="flex items-center gap-3"><Link href="/" className="rounded-sm" aria-label="TakeOne home"><Logo /></Link>{DEMO && <DemoPill />}</div>
         <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
           {NAV_LINKS.map(([label, href]) => <NavItem key={href} href={href} className={navLink}>{label}</NavItem>)}
         </nav>
@@ -146,71 +147,80 @@ export function Hero() {
                   <Cta where="hero" arrow />
                   <Cta where="hero-secondary" variant="secondary" href={h.secondary.href} label={h.secondary.label} />
                 </div>
-                <p className="mt-6 max-w-prose text-caption text-tertiary">{h.trust.join(' · ')}</p>
+                <p className="mt-6 max-w-xl text-balance text-caption text-tertiary">{h.trust.join(' · ')}</p>
               </>
             );
           }}
         </Swap>
       </div>
-      {/* fixed 4:5 stage so switching audience never moves the page */}
-      <div className="relative mx-auto aspect-portrait w-full max-w-lg">
-        <Swap className="absolute inset-0">{(a) => (a === 'creators' ? <CreatorVisual /> : <BrandVisual />)}</Swap>
+      {/* from lg the stage is a fixed 4:5 box, so switching audience never moves the page; below that it flows */}
+      <div className="relative mx-auto w-full max-w-lg lg:aspect-portrait">
+        <Swap className="lg:absolute lg:inset-0">{(a) => (a === 'creators' ? <CreatorVisual /> : <BrandVisual />)}</Swap>
       </div>
     </section>
   );
 }
 
-const CHIP_POS = ['left-0 top-12', 'right-0 top-1/2', 'left-0 bottom-12'];
+// Inside the phone, clear of its edges, of each other and of the centre caption.
+const CHIP_POS = ['left-4 top-6', 'right-4 top-2/3', 'left-4 bottom-6'];
 /** The take in a phone, with the three moments of a creator's month arriving one after another. */
 function CreatorVisual() {
   const reduced = useReducedMotion();
+  const chip = (text: string, i: number, className: string) => (
+    <m.li key={text} className={cn('flex h-9 w-max max-w-full items-center gap-2 rounded-full border border-border-strong bg-surface-2 pl-2 pr-4 text-caption shadow-float', className)}
+      initial={{ opacity: 0, y: reduced ? 0 : 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: motionTokens.duration.slow / 1000, ease: EASE, delay: 0.6 + i * 0.9 }}>
+      <span className="grid size-5 shrink-0 place-items-center rounded-full bg-success-soft text-success-text"><Check size={12} strokeWidth={2} aria-hidden /></span><span className="truncate">{text}</span>
+    </m.li>
+  );
   return (
-    <div className="relative size-full">
-      <div className="mx-auto aspect-reel h-full rounded-xl border border-border-strong bg-surface-1 p-2">
+    <div className="flex flex-col items-center gap-4 lg:h-full">
+      <div className="relative aspect-reel w-64 max-w-full rounded-xl border border-border-strong bg-surface-1 p-2 sm:w-72 lg:h-full lg:w-auto">
         <VideoFrame media="hero/take" radius="lg" label="A creator’s take" autoPlay priority controls={false} className="size-full" />
+        {/* from 640px the chips sit inside the frame */}
+        <ul className="hidden sm:block" aria-label="What happens next">{HERO_CHIPS.map((t, i) => chip(t, i, cn('absolute', CHIP_POS[i])))}</ul>
       </div>
-      {HERO_CHIPS.map((text, i) => (
-        <m.div key={text} className={cn('absolute flex h-9 items-center gap-2 rounded-full border border-border-strong bg-surface-2 pl-2 pr-4 text-caption shadow-float', CHIP_POS[i])}
-          initial={{ opacity: 0, y: reduced ? 0 : 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: motionTokens.duration.slow / 1000, ease: EASE, delay: 0.6 + i * 0.9 }}>
-          <span className="grid size-5 place-items-center rounded-full bg-success-soft text-success-text"><Check size={12} strokeWidth={2} aria-hidden /></span>{text}
-        </m.div>
-      ))}
+      {/* on phones there is no room beside or inside the frame, so they stack neatly under it */}
+      <ul className="flex flex-col items-center gap-2 sm:hidden" aria-label="What happens next">{HERO_CHIPS.map((t, i) => chip(t, i, ''))}</ul>
     </div>
   );
 }
 
 const LOOP = 6;
-/** One take fans out into ten scored variants; three are picked. Loops every six seconds; static with reduced motion. */
+/**
+ * One take becomes ten scored variants. The take drops in at the top left, the cards light up in score order, the top
+ * three are selected, and it repeats every six seconds. With reduced motion it is the finished picture, still.
+ */
 function BrandVisual() {
   const reduced = useReducedMotion();
   const still = mediaFile('hero/take', IMAGE_EXTS);
+  const loop = (times: number[]) => ({ duration: LOOP, times, ease: EASE, repeat: Infinity });
   return (
-    <div className="flex size-full flex-col items-center justify-between" role="img" aria-label="One take becomes ten scored ad variants; three are selected">
-      <div className="aspect-reel w-20 rounded-md border border-border-strong bg-surface-1 p-1 sm:w-24">
-        <VideoFrame media="hero/take" radius="sm" label="The take" autoPlay priority controls={false} className="size-full" />
+    <div className="grid grid-cols-5 gap-2 sm:gap-3 lg:h-full lg:content-center" role="img" aria-label="One take becomes ten scored ad variants; the top three are selected">
+      {/* the take: full width on phones, the top-left 2 × 2 of the grid from 640px */}
+      <m.div aria-hidden className="col-span-5 rounded-lg border border-border-strong bg-surface-1 p-1 sm:col-span-2 sm:row-span-2"
+        initial={reduced ? false : { opacity: 0, y: -24 }} animate={reduced ? { opacity: 1, y: 0 } : { opacity: [0, 1, 1, 1], y: [-24, 0, 0, 0] }} transition={reduced ? { duration: 0 } : loop([0, 0.08, 0.96, 1])}>
+        <VideoFrame media="hero/take" radius="md" label="The take" name="The take" autoPlay priority controls={false} className="size-full sm:aspect-auto" />
+      </m.div>
+      {EXAMPLE_SCORES.map((score, i) => {
+        const at = 0.12 + i * 0.035; // cards light up one after another, best score first
+        return (
+          <div key={score} aria-hidden className="relative aspect-reel overflow-hidden rounded-sm border border-border-strong bg-surface-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {still && <img src={still} alt="" className="absolute inset-0 size-full object-cover" />}
+            <m.span className="absolute inset-0 bg-surface-3" initial={reduced ? false : { opacity: 0 }} animate={reduced ? { opacity: 0 } : { opacity: [0, 0, 1, 0, 0] }} transition={reduced ? { duration: 0 } : loop([0, at, at + 0.04, at + 0.14, 1])} />
+            <span className="tabular absolute bottom-1 left-1 rounded-full bg-scrim px-2 text-caption text-on-media">{score}</span>
+            {i < 3 && (
+              <m.span className="absolute inset-0 rounded-sm border-2 border-accent-brand"
+                initial={reduced ? false : { opacity: 0 }} animate={reduced ? { opacity: 1 } : { opacity: [0, 0, 1, 1, 0] }} transition={reduced ? { duration: 0 } : loop([0, 0.56 + i * 0.03, 0.62 + i * 0.03, 0.95, 1])}>
+                <span className="absolute right-1 top-1 grid size-4 place-items-center rounded-full bg-accent text-on-accent"><Check size={12} strokeWidth={2} /></span>
+              </m.span>
+            )}
+          </div>
+        );
+      })}
+      <div className="col-span-5 flex items-center justify-between gap-2 text-caption text-tertiary sm:col-span-1 sm:flex-col sm:items-start sm:justify-end">
+        <span className="flex items-center gap-2"><span className="size-2 shrink-0 rounded-full bg-accent-brand" aria-hidden />Selected</span><span>Example</span>
       </div>
-      <div className="grid w-full grid-cols-5 gap-2 sm:gap-3" aria-hidden>
-        {EXAMPLE_SCORES.map((score, i) => {
-          const start = 0.04 + i * 0.025;
-          return (
-            <m.div key={score} className="relative aspect-reel overflow-hidden rounded-sm border border-border-strong bg-surface-2"
-              initial={reduced ? false : { opacity: 0, scale: 0.6, y: -48 }}
-              animate={reduced ? { opacity: 1, scale: 1, y: 0 } : { opacity: [0, 0, 1, 1, 0], scale: [0.6, 0.6, 1, 1, 1], y: [-48, -48, 0, 0, 0] }}
-              transition={reduced ? { duration: 0 } : { duration: LOOP, times: [0, start, start + 0.12, 0.94, 1], ease: EASE, repeat: Infinity }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {still && <img src={still} alt="" className="absolute inset-0 size-full object-cover" />}
-              <span className="tabular absolute bottom-1 left-1 rounded-full bg-scrim px-2 text-caption text-on-media">{score}</span>
-              {i < 3 && (
-                <m.span className="absolute inset-0 rounded-sm border-2 border-accent-brand"
-                  initial={reduced ? false : { opacity: 0 }} animate={reduced ? { opacity: 1 } : { opacity: [0, 0, 1, 1, 0] }} transition={reduced ? { duration: 0 } : { duration: LOOP, times: [0, 0.5, 0.58, 0.94, 1], repeat: Infinity }}>
-                  <span className="absolute right-1 top-1 grid size-4 place-items-center rounded-full bg-accent text-on-accent"><Check size={12} strokeWidth={2} /></span>
-                </m.span>
-              )}
-            </m.div>
-          );
-        })}
-      </div>
-      <div className="flex w-full items-center justify-between text-caption text-tertiary"><span className="flex items-center gap-2"><span className="size-2 rounded-full bg-accent-brand" aria-hidden />Selected</span><span>Example</span></div>
     </div>
   );
 }
@@ -219,7 +229,7 @@ function BrandVisual() {
 export function StatCard({ value, text, source }: { value: string; text: string; source: string }) {
   return (
     <div className="card flex flex-col p-6">
-      <div className="tabular text-stat text-accent-text">{value}</div>
+      <div className="tabular text-stat text-primary">{value}</div>
       <p className="mt-4 text-body text-secondary">{text}</p>
       <p className="mt-auto pt-6 text-caption text-tertiary">Source: {source}</p>
     </div>
@@ -311,36 +321,46 @@ function StepVisual({ audience, step }: { audience: Audience; step: number }) {
 export function HowItWorks() {
   const { audience } = useMarketing();
   const [active, setActive] = useState(0);
-  const refs = useRef<(HTMLLIElement | null)[]>([]);
+  const mids = useRef<(HTMLSpanElement | null)[]>([]);
   useEffect(() => {
-    // the step crossing the middle band of the viewport is the active one
-    const io = new IntersectionObserver((entries) => { for (const e of entries) if (e.isIntersecting) setActive(Number((e.target as HTMLElement).dataset.step)); }, { rootMargin: '-45% 0px -45% 0px' });
-    refs.current.forEach((el) => el && io.observe(el));
+    // A marker sits at each step's midpoint. The active step is the last one whose midpoint has passed the middle of
+    // the viewport; the observer fires exactly when a midpoint crosses that line (or leaves at the top).
+    const pick = () => {
+      const line = window.innerHeight / 2;
+      let i = 0;
+      mids.current.forEach((el, k) => { if (el && el.getBoundingClientRect().top <= line) i = k; });
+      setActive(i);
+    };
+    const io = new IntersectionObserver(pick, { rootMargin: '0px 0px -50% 0px', threshold: [0, 1] });
+    mids.current.forEach((el) => el && io.observe(el));
+    pick();
     return () => io.disconnect();
   }, []);
-  const steps = STEPS[audience];
   return (
     <section id="how" className="scroll-mt-16 border-t border-border bg-surface-1">
       <div className="container-page py-16 lg:py-24">
         <p className="caption-label">How it works</p>
-        <div className="mt-8 grid gap-12 lg:grid-cols-2 lg:gap-16">
+        <div className="mt-8 grid gap-12 lg:mt-0 lg:grid-cols-2 lg:gap-16">
           <ol>
-            {steps.map((_, i) => (
-              <li key={i} ref={(el) => { refs.current[i] = el; }} data-step={i} className="flex flex-col justify-center border-t border-border py-8 first:border-t-0 first:pt-0 lg:min-h-80 lg:border-t-0 lg:py-0">
+            {STEPS[audience].map((_, i) => (
+              <li key={i} className="relative flex flex-col justify-center border-t border-border py-8 first:border-t-0 first:pt-0 lg:h-96 lg:border-t-0 lg:py-0">
+                <span ref={(el) => { mids.current[i] = el; }} aria-hidden className="pointer-events-none absolute left-0 top-1/2 h-px w-px" />
                 <div>
-                  <div className="tabular caption-label">Step {i + 1}</div>
+                  <div className={cn('tabular caption-label transition-colors duration-base', active === i && 'lg:text-secondary')}>Step {i + 1}</div>
                   {/* steps away from the centre recede by colour, not opacity, so they stay readable */}
                   <Swap>{(a) => <><h3 className={cn('mt-3 text-h2 transition-colors duration-base', active !== i && 'lg:text-tertiary')}>{STEPS[a][i]![0]}</h3><p className={cn('mt-3 max-w-prose text-body-lg transition-colors duration-base', active === i ? 'text-secondary' : 'text-secondary lg:text-tertiary')}>{STEPS[a][i]![1]}</p></>}</Swap>
                 </div>
+                {/* phones and tablets: each step's picture sits directly under its text */}
                 <div className="card mt-6 bg-bg p-5 lg:hidden"><StepVisual audience={audience} step={i} /></div>
               </li>
             ))}
           </ol>
+          {/* desktop: one picture, pinned to the middle of the viewport, changing as each step becomes active */}
           <div className="hidden lg:block">
-            <div className="sticky top-24 flex min-h-80 flex-col justify-center">
+            <div className="sticky top-0 flex h-screen max-h-full flex-col justify-center">
               <div className="card bg-bg p-8">
                 <AnimatePresence mode="wait">
-                  <m.div key={`${audience}-${active}`} {...FADE}><StepVisual audience={audience} step={active} /></m.div>
+                  <m.div key={`${audience}-${active}`} {...FADE} className="flex min-h-72 flex-col justify-center"><StepVisual audience={audience} step={active} /></m.div>
                 </AnimatePresence>
               </div>
               <p className="mt-3 text-right text-caption text-tertiary">Example</p>
@@ -380,23 +400,45 @@ export function Earnings() {
 }
 
 // ── Formats reel ──────────────────────────────────────────────────────────────────────────────────────────
-/** Live formats only. Scrolls natively (touch, trackpad, keyboard) and can be dragged with a mouse. */
+/**
+ * Live formats only. Full-bleed: the first card lines up with the page column and the row runs to the right edge of
+ * the screen. Scrolls natively with snap; on desktop it can also be dragged or moved with the arrow buttons.
+ */
 export function FormatsReel() {
   const ref = useRef<HTMLUListElement>(null);
-  const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
+  const drag = useRef<{ x: number; left: number } | null>(null);
+  const [edge, setEdge] = useState<{ start: boolean; end: boolean }>({ start: true, end: false });
+  const sync = () => { const el = ref.current; if (el) setEdge({ start: el.scrollLeft < 8, end: el.scrollLeft + el.clientWidth > el.scrollWidth - 8 }); };
+  useEffect(() => { sync(); window.addEventListener('resize', sync); return () => window.removeEventListener('resize', sync); }, []);
+  const step = (dir: 1 | -1) => { const el = ref.current; const card = el?.querySelector('li'); if (el && card) el.scrollBy({ left: dir * (card.clientWidth + 24), behavior: 'smooth' }); };
+  const arrow = 'grid size-10 place-items-center rounded-full border border-border-strong text-primary transition duration-fast ease-standard hover:bg-surface-3 active:scale-press disabled:pointer-events-none disabled:opacity-40';
+  const missing = V1_FORMATS.some((f) => !mediaFile(`variants/${f.id}`, ['mp4', 'webm', ...IMAGE_EXTS]));
   return (
-    <ul ref={ref} tabIndex={0} aria-label="Ad formats" className="container-page flex cursor-grab snap-x gap-4 overflow-x-auto pb-4 active:cursor-grabbing sm:gap-6"
-      onPointerDown={(e) => { if (e.pointerType === 'mouse' && ref.current) drag.current = { x: e.clientX, left: ref.current.scrollLeft, moved: false }; }}
-      onPointerMove={(e) => { const d = drag.current; if (d && ref.current) { ref.current.scrollLeft = d.left - (e.clientX - d.x); d.moved ||= Math.abs(e.clientX - d.x) > 4; } }}
-      onPointerUp={() => { drag.current = null; }} onPointerLeave={() => { drag.current = null; }}>
-      {V1_FORMATS.map((f) => (
-        <li key={f.id} className="w-56 shrink-0 snap-start select-none sm:w-64">
-          <VideoFrame media={`variants/${f.id}`} label={f.name} />
-          <div className="mt-4 text-body font-medium">{f.name}</div>
-          <div className="mt-1 text-small text-secondary">{f.tagline}</div>
-        </li>
-      ))}
-    </ul>
+    <div>
+      <div className="relative">
+        <ul ref={ref} tabIndex={0} aria-label="Ad formats" onScroll={sync}
+          className="reel flex cursor-grab snap-x snap-mandatory gap-4 overflow-x-auto pb-2 active:cursor-grabbing sm:gap-6"
+          onPointerDown={(e) => { if (e.pointerType === 'mouse' && ref.current) { drag.current = { x: e.clientX, left: ref.current.scrollLeft }; ref.current.style.scrollSnapType = 'none'; } }}
+          onPointerMove={(e) => { const d = drag.current; if (d && ref.current) ref.current.scrollLeft = d.left - (e.clientX - d.x); }}
+          onPointerUp={() => { drag.current = null; if (ref.current) ref.current.style.scrollSnapType = ''; }} onPointerLeave={() => { drag.current = null; if (ref.current) ref.current.style.scrollSnapType = ''; }}>
+          {V1_FORMATS.map((f) => (
+            <li key={f.id} className="w-56 shrink-0 snap-start select-none sm:w-64">
+              <VideoFrame media={`variants/${f.id}`} label={f.name} placeholder="name" />
+              <div className="mt-4 text-body font-medium">{f.name}</div>
+              <div className="mt-1 text-small text-secondary">{f.tagline}</div>
+            </li>
+          ))}
+        </ul>
+        <div aria-hidden className={cn('fade-right pointer-events-none absolute inset-y-0 right-0 w-24 transition-opacity duration-base', edge.end && 'opacity-0')} />
+      </div>
+      <div className="container-page mt-6 flex flex-wrap items-center justify-between gap-4">
+        <p className="text-body text-secondary">New formats added every month.{missing && <span className="ml-3 text-caption text-tertiary">Footage coming soon</span>}</p>
+        <div className="hidden gap-2 md:flex">
+          <button type="button" aria-label="Previous formats" disabled={edge.start} onClick={() => step(-1)} className={arrow}><ChevronLeft size={20} {...ICON} /></button>
+          <button type="button" aria-label="More formats" disabled={edge.end} onClick={() => step(1)} className={arrow}><ChevronRight size={20} {...ICON} /></button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -426,7 +468,7 @@ export function LeaderboardPreview() {
 
 // ── Waitlist ──────────────────────────────────────────────────────────────────────────────────────────────
 /** Writes straight to the insert-only `waitlist` table with the public key, so it works on a static host too. */
-export function WaitlistForm({ fixedRole, cta = 'Join the waitlist' }: { fixedRole?: 'creator' | 'brand'; cta?: string }) {
+export function WaitlistForm({ fixedRole, cta = 'Join the waitlist', centred }: { fixedRole?: 'creator' | 'brand'; cta?: string; centred?: boolean }) {
   const m = useMarketing();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'creator' | 'brand' | null>(null);
@@ -435,6 +477,7 @@ export function WaitlistForm({ fixedRole, cta = 'Join the waitlist' }: { fixedRo
   const chosen = fixedRole ?? role ?? (m.audience === 'brands' ? 'brand' : 'creator');
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (m.country === 'OTHER') return setState({ error: 'Choose India or the UAE. TakeOne Live is held in Mumbai and Dubai.' });
     const parsed = waitlistSchema.safeParse({ email, role: chosen, country: m.country });
     if (!parsed.success) return setState({ error: 'Enter a valid email address.' });
     setState({ busy: true });
@@ -446,17 +489,17 @@ export function WaitlistForm({ fixedRole, cta = 'Join the waitlist' }: { fixedRo
   }
   if (state.done) return <p role="status" className="flex items-center gap-3 text-body-lg"><span className="grid size-6 place-items-center rounded-full bg-success-soft text-success-text"><Check size={16} {...ICON} aria-hidden /></span>You’re on the list. We’ll email you when invitations open.</p>;
   return (
-    <form onSubmit={submit} noValidate className="max-w-xl">
+    <form onSubmit={submit} noValidate className="w-full max-w-xl text-left">
       <div className="flex flex-col gap-3 sm:flex-row">
         <label className="sr-only" htmlFor={`wl-email-${fixedRole ?? 'live'}`}>Email address</label>
         <input id={`wl-email-${fixedRole ?? 'live'}`} type="email" inputMode="email" autoComplete="email" required placeholder="you@example.com" className="input flex-1" value={email} onChange={(e) => { setEmail(e.target.value); if (state.error) setState({}); }} aria-invalid={!!state.error} aria-describedby={state.error ? 'wl-error' : undefined} />
         <input type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" value={trap} onChange={(e) => setTrap(e.target.value)} />
         <Button type="submit" size="lg" loading={state.busy}>{cta}</Button>
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-small text-secondary">
+      <div className={cn('mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-small text-secondary', centred && 'justify-center')}>
         {!fixedRole && (
           <div role="radiogroup" aria-label="I am a" className="flex items-center gap-2">
-            {(['creator', 'brand'] as const).map((r) => <button key={r} type="button" role="radio" aria-checked={chosen === r} onClick={() => setRole(r)} className="chip">{r}</button>)}
+            {(['creator', 'brand'] as const).map((r) => <button key={r} type="button" role="radio" aria-checked={chosen === r} onClick={() => setRole(r)} className="chip">{r === 'creator' ? 'Creator' : 'Brand'}</button>)}
           </div>
         )}
         <CountrySelect label="Country" />
@@ -470,7 +513,7 @@ export function CountrySelect({ label = 'Country and currency' }: { label?: stri
   const { country, setCountry } = useMarketing();
   return (
     <div role="radiogroup" aria-label={label} className="inline-flex rounded-full bg-surface-2 p-1">
-      {([['IN', 'India'], ['AE', 'UAE']] as [Market, string][]).map(([code, name]) => (
+      {([['IN', 'India'], ['AE', 'UAE']] as ['IN' | 'AE', string][]).map(([code, name]) => (
         <button key={code} type="button" role="radio" aria-checked={country === code} onClick={() => setCountry(code)}
           className={cn('inline-flex h-8 items-center gap-2 rounded-full px-3 text-small font-medium transition duration-fast ease-standard active:scale-press', country === code ? 'bg-surface-3 text-primary' : 'text-secondary hover:text-primary')}>
           <Flag code={code} />{name}
@@ -482,8 +525,10 @@ export function CountrySelect({ label = 'Country and currency' }: { label?: stri
 
 // ── Pricing ───────────────────────────────────────────────────────────────────────────────────────────────
 export function Pricing() {
-  const { currency } = useMarketing();
-  const pro = money(convertMinor(PRO_PRICE_USD_MINOR, 'USD', currency), currency);
+  const { country } = useMarketing();
+  // a fixed price per market (India ₹699, UAE AED 69), never a conversion; everyone else is quoted in US dollars
+  const price = proPriceFor(country);
+  const local = price.currency !== 'USD';
   return (
     <div className="mt-12 grid gap-6 lg:grid-cols-2">
       <div className="card flex flex-col p-6 lg:p-8">
@@ -492,8 +537,8 @@ export function Pricing() {
           <div><h3 className="text-h3">{PRICING.free[0]}</h3><p className="mt-3 text-body text-secondary">{PRICING.free[1]}</p></div>
           <div className="border-t border-border pt-6 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
             <h3 className="text-h3">{PRICING.pro[0]}</h3>
-            <p className="tabular mt-3 text-stat-sm text-accent-text">{pro}<span className="ml-2 text-small font-normal text-tertiary">a month</span></p>
-            <p className="mt-3 text-body text-secondary">{PRICING.pro[1]}</p>
+            <p className="tabular mt-3 text-stat-sm text-primary">{money(price.minor, price.currency)}<span className="ml-2 text-small font-normal text-tertiary">a month</span></p>
+            <p className="mt-3 text-body text-secondary">{local ? PRICING.proFeatures : PRICING.pro[1]}</p>
           </div>
         </div>
         <div className="mt-auto pt-8"><Cta where="pricing-creators" href={SIGNUP.creators} label={PRIMARY_CTA.creators} /></div>

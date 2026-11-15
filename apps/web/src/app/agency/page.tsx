@@ -1,4 +1,4 @@
-import { agencyInvoiceLine, COUNTRIES } from '@takeone/shared';
+import { agencyInvoiceLine, COUNTRIES, countryName } from '@takeone/shared';
 import { getFx, requireRole } from '@/lib/session';
 import { supabaseServer } from '@/lib/supabase-server';
 import { Avatar, Card, EmptyState, Flag, Money, PageHeader, Stat, StatusBadge } from '@/components/ui';
@@ -23,7 +23,7 @@ export default async function AgencyHome({ searchParams }: { searchParams: Promi
   const billedOf = (rows: typeof month) => rows.reduce((a, p) => a + convertMinor(agencyInvoiceLine(Number(p.gross_minor), bps(p.brand_id)).clientTotalMinor, p.currency as CurrencyCode, cur, fx), 0);
   const markupOf = (rows: typeof month) => rows.reduce((a, p) => a + convertMinor(agencyInvoiceLine(Number(p.gross_minor), bps(p.brand_id)).markupMinor, p.currency as CurrencyCode, cur, fx), 0);
   const active = (campaigns ?? []).filter((c) => ['live', 'in_progress'].includes(c.status));
-  const countries = Object.entries(COUNTRIES).map(([code, c]) => ({ code, name: c.name }));
+  const countries = Object.keys(COUNTRIES).map((code) => ({ code, name: countryName(code) }));
   return (
     <>
       <PageHeader title="Clients" sub={`Each client sees ${agency.name} only. You are billed at standard prices and set your own markup per client.`} action={<AddClient agencyId={agency.id} defaultBps={agency.markup_default_bps} countries={countries} openInitially={add === '1'} />} />
@@ -35,7 +35,7 @@ export default async function AgencyHome({ searchParams }: { searchParams: Promi
       </div>
       <div className="mt-8">
         {s.brands.length === 0 ? <EmptyState title="You have no clients yet. Add one to open their workspace under your brand." action={<AddClient agencyId={agency.id} defaultBps={agency.markup_default_bps} countries={countries} label="Add your first client" />} /> : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-cards gap-4">
             {s.brands.map((b) => {
               const cs = (campaigns ?? []).filter((c) => c.brand_id === b.id);
               const act = cs.filter((c) => ['live', 'in_progress'].includes(c.status)).length;
@@ -44,11 +44,11 @@ export default async function AgencyHome({ searchParams }: { searchParams: Promi
                 <Card key={b.id} className="flex flex-col gap-5">
                   <div className="flex items-center gap-3">
                     <Avatar name={b.name} src={b.logo} size="lg" square />
-                    <div className="min-w-0 flex-1"><div className="truncate text-body font-medium">{b.name}</div><div className="flex items-center gap-2 text-caption text-secondary"><Flag code={b.country} />{COUNTRIES[b.country as keyof typeof COUNTRIES]?.name} · {b.currency}</div></div>
+                    <div className="min-w-0 flex-1"><div className="truncate text-body font-medium">{b.name}</div><div className="flex items-center gap-2 text-caption text-secondary"><Flag code={b.country} />{countryName(b.country)} · {b.currency}</div></div>
                     <StatusBadge kind="client" status={act > 0 ? 'active' : cs.length ? 'idle' : 'new'} />
                   </div>
                   <dl className="tabular grid grid-cols-3 gap-2 text-center">
-                    {([['Campaigns', cs.length], ['Active', act], ['Billed this month', <Money key="m" minor={billed} currency={b.currency} />]] as const).map(([k, v]) => <div key={k} className="rounded-sm bg-surface-2 px-1 py-2"><dt className="truncate text-caption text-tertiary">{k}</dt><dd className="text-small font-semibold">{v}</dd></div>)}
+                    {([['Campaigns', cs.length], ['Active', act], ['This month', <Money key="m" minor={billed} currency={b.currency} />]] as const).map(([k, v]) => <div key={k} className="rounded-sm bg-surface-2 px-2 py-3"><dd className="text-body font-semibold">{v}</dd><dt className="mt-1 text-caption text-tertiary">{k}</dt></div>)}
                   </dl>
                   <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-4">
                     <MarkupEdit brandId={b.id} name={b.name} bps={b.markup_bps ?? agency.markup_default_bps} isDefault={b.markup_bps === null} />

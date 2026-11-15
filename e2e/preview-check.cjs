@@ -14,7 +14,8 @@ const ok = (name, pass, note = '') => { results.push(`${pass ? 'PASS' : 'FAIL'} 
     page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.googleapis|fontshare|ERR_TUNNEL|net::ERR|Failed to load resource/.test(m.text())) bad.push(`console: ${m.text().slice(0, 160)}`); });
     return page;
   };
-  const see = (page, text, t = 30000) => page.getByText(text, { exact: false }).first().waitFor({ timeout: t }).then(() => true, () => false);
+  // visible matches only: placeholders also carry a hidden name for small sizes
+  const see = (page, text, t = 30000) => page.getByText(text, { exact: false }).locator('visible=true').first().waitFor({ timeout: t }).then(() => true, () => false);
   const login = async (page, email) => { await page.fill('#email', email); await page.fill('#password', PW); await page.click('button[type=submit]'); };
 
   // 1. landing

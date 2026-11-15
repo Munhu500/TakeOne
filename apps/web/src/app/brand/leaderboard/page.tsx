@@ -1,4 +1,4 @@
-import { CATEGORIES, COUNTRIES, earningsBand, exactEarnings, rankBrands, rankCreators, type RankedCreator } from '@takeone/shared';
+import { CATEGORIES, categoryLabel, COUNTRIES, countryName, earningsBand, exactEarnings, rankBrands, rankCreators, type RankedCreator } from '@takeone/shared';
 import { getFx, requireBrand } from '@/lib/session';
 import { supabaseServer } from '@/lib/supabase-server';
 import { leaderboardRows, toStats, type BoardRow } from '@/lib/queries';
@@ -53,7 +53,7 @@ export default async function Leaderboard({ searchParams }: { searchParams: Prom
       })() : (
         <>
           <BoardFilters board={board} period={period} country={sp.country ?? ''} category={sp.category ?? ''}
-            countries={Object.entries(COUNTRIES).slice(0, 2).map(([code, c]) => ({ value: code, label: c.name }))} categories={CATEGORIES.map((c) => ({ value: c, label: c[0]!.toUpperCase() + c.slice(1) }))} />
+            countries={Object.keys(COUNTRIES).slice(0, 2).map((code) => ({ value: code, label: countryName(code) }))} categories={CATEGORIES.map((c) => ({ value: c, label: categoryLabel(c) }))} />
           {ranked.length === 0 ? <EmptyState title={board === 'rising' ? 'No Rising Stars match these filters. Try another country or category.' : 'No creators match these filters. Try another country or category.'} action={<LinkButton href={tab(board)} variant="secondary">Clear filters</LinkButton>} /> : (
             <>
               {/* podium */}
@@ -61,11 +61,11 @@ export default async function Leaderboard({ searchParams }: { searchParams: Prom
                 {ranked.slice(0, 3).map((r) => {
                   const row = byId.get(r.creatorId)!;
                   return (
-                    <li key={r.creatorId} className="card flex flex-col gap-4 p-5">
+                    <li key={r.creatorId} className={cn('card flex flex-col gap-4 p-5', r.rank === 1 && 'border-t-2 border-t-accent-brand')}>
                       <div className="flex items-center gap-3">
-                        <span className={cn('tabular text-stat-sm', r.rank === 1 ? 'text-accent-text' : 'text-tertiary')}>{r.rank}</span>
+                        <span className="tabular text-stat-sm text-primary">{r.rank}</span>
                         <Avatar name={row.display_name} src={row.avatar} size="lg" />
-                        <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><span className="truncate text-body font-medium">{row.display_name}</span>{row.is_pro && <Badge tone="outline">Pro</Badge>}</div><div className="flex items-center gap-2 truncate text-caption capitalize text-secondary"><Flag code={row.country} />{row.categories.join(' · ')}</div></div>
+                        <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><span className="truncate text-body font-medium">{row.display_name}</span>{row.is_pro && <Badge tone="outline">Pro</Badge>}</div><div className="flex items-center gap-2 truncate text-caption text-secondary"><Flag code={row.country} />{row.categories.map(categoryLabel).join(' · ')}</div></div>
                       </div>
                       <dl className="tabular grid grid-cols-4 gap-2 text-center">{cols(r, row).map(([k, v]) => <div key={k}><dt className="text-caption text-tertiary">{k}</dt><dd className="truncate text-small font-semibold">{v}</dd></div>)}</dl>
                       <div className="flex justify-end border-t border-border pt-4"><InviteButton creatorId={r.creatorId} name={row.display_name} campaigns={invitable} /></div>
@@ -81,7 +81,7 @@ export default async function Leaderboard({ searchParams }: { searchParams: Prom
                       <li key={r.creatorId} className="flex min-h-row-media items-center gap-4 px-4 py-3">
                         <span className="tabular w-8 text-body font-semibold text-tertiary">{r.rank}</span>
                         <Avatar name={row.display_name} src={row.avatar} />
-                        <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><span className="truncate font-medium">{row.display_name}</span>{row.is_pro && <Badge tone="outline">Pro</Badge>}</div><div className="flex items-center gap-2 truncate text-caption capitalize text-secondary"><Flag code={row.country} />{row.categories.join(' · ')}</div></div>
+                        <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><span className="truncate font-medium">{row.display_name}</span>{row.is_pro && <Badge tone="outline">Pro</Badge>}</div><div className="flex items-center gap-2 truncate text-caption text-secondary"><Flag code={row.country} />{row.categories.map(categoryLabel).join(' · ')}</div></div>
                         <dl className="tabular hidden gap-6 text-right lg:flex">{cols(r, row).map(([k, v], i) => <div key={k} className={i === 3 ? 'w-28' : 'w-20'}><dt className="text-caption text-tertiary">{k}</dt><dd className="truncate text-small font-semibold">{v}</dd></div>)}</dl>
                         <InviteButton creatorId={r.creatorId} name={row.display_name} campaigns={invitable} />
                       </li>

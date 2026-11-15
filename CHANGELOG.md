@@ -1,5 +1,19 @@
 # Changelog
 
+## Fixes from screenshot review (3.1)
+- Landing: creator chips sit inside the phone (stacked under it on phones); brand hero rebuilt with the take at the top
+  left and ten cards lighting up in score order; how-it-works picture pinned to the middle of the viewport and switched
+  at each step's midpoint; full-bleed formats reel with arrows and edge fade; TakeOne Live centred on a vignette until
+  `live/event.jpg` exists; stat numbers and the Pro price in primary text.
+- Creator Pro is a fixed price per market: India ₹699, UAE AED 69, elsewhere USD 19 (`pro_prices` setting).
+- Placeholders adapt to their own width: under 200px they show the format name, not "Footage coming soon".
+- Product tiles use a short name ("SPF", "VC") from `campaigns.product_short_name`, or one derived from the name.
+- Earnings bands per market (₹25K+ … ₹20L+, AED 1K+ … 60K+); demo ratings and earnings follow results.
+- Distinct applicant pitches and renewal reminders; display names for categories and countries; dates always "30 Sep 2026".
+- Agency: per-currency billing totals with a labelled combined row, clearer invoice links, cards that fill the row,
+  tooltips and a client indicator in the collapsed sidebar, logo or initials tile in the white-label preview.
+- `<Logo>` reads `public/brand/logo-mark.svg` (and `.png` for invoices) when present.
+
 ## Web premium overhaul 3 of 4 — brand and agency dashboards
 - Shell: 248px sidebar (icons only at 1024px and below), agency workspace switcher with search, user menu with theme
   and sign-out, breadcrumb bar with notifications (unread count, marks read on open).

@@ -4,7 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Check } from 'lucide-react-native';
 import { useState } from 'react';
 import { View } from 'react-native';
-import { PRO_PRICE_USD_MINOR } from '@takeone/shared';
+import { formatMoney, proPriceFor, type ProPrices } from '@takeone/shared';
 import { Badge, Button, Card, ProgressBar, Row, Screen, Text, toast, toastError } from '@/components/ui';
 import { useMe, useMoney } from '@/lib/data';
 import { DEMO, rpc, supabase, webApi } from '@/lib/supabase';
@@ -19,7 +19,9 @@ export default function Pro() {
   const money = useMoney();
   const { data: me } = useMe();
   const [busy, setBusy] = useState(false);
-  const price = useQuery({ queryKey: ['pro-price'], queryFn: async () => Number((await supabase.from('settings').select('value').eq('key', 'pro_price_usd_minor').maybeSingle()).data?.value ?? PRO_PRICE_USD_MINOR) });
+  // Pro is a fixed price per market (India ₹699, UAE AED 69, elsewhere USD 19), read from settings
+  const prices = useQuery({ queryKey: ['pro-prices'], queryFn: async () => (await supabase.from('settings').select('value').eq('key', 'pro_prices').maybeSingle()).data?.value as ProPrices | undefined });
+  const price = proPriceFor(me?.profile.country, prices.data);
   const g = useQuery({ queryKey: ['guarantee'], enabled: !!me?.isPro && !me.creator?.is_founding, queryFn: () => rpc<{ criteria: Criterion[]; tracking: { window_start: string; eligible: boolean; free_months_issued: number } }>('my_guarantee') });
   const done = async (msg: string) => { await qc.invalidateQueries({ queryKey: ['me'] }); toast(msg); };
 
@@ -35,7 +37,7 @@ export default function Pro() {
   const met = g.data?.criteria.filter((x) => x.met).length ?? 0;
   const dayN = g.data ? Math.min(60, Math.max(1, Math.ceil((Date.now() - new Date(g.data.tracking.window_start).getTime()) / 86_400_000))) : 0;
   return (
-    <Screen edges={false} footer={me?.isPro ? undefined : <Button title={`Go Pro · ${money(price.data ?? PRO_PRICE_USD_MINOR, 'USD')} / month`} loading={busy} onPress={upgrade} />}>
+    <Screen edges={false} footer={me?.isPro ? undefined : <Button title={`Go Pro · ${formatMoney(price.minor, price.currency, { decimals: 'never' })} / month`} loading={busy} onPress={upgrade} />}>
       <View style={{ gap: 6 }}>
         {me?.isPro ? <Badge tone="accent" label={me.creator?.is_founding ? 'Founding creator · Pro free for life' : 'You are on Pro'} /> : null}
         <Text size="xl" weight="bold">{me?.isPro ? 'Your Pro benefits' : 'Get picked first.'}</Text>

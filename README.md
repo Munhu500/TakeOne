@@ -152,6 +152,9 @@ Real mode: set `DEMO_MODE=false`, add the keys in `.env.example`, set the `demo_
   `variants/<format_id>.mp4`). Until a file exists the slot shows a neutral frame. See the README in that folder.
 - Accent: `accent-brand` (#7C5CFF) is for the logo mark, indicators, focus rings and active underlines. `accent` (#6A4BF0)
   is the filled button and always carries a white label; hover and pressed step darker.
+- Brand identity: drop `logo-mark.svg` (and `logo-mark.png` for invoice PDFs) into `apps/web/public/brand`. Until then
+  the wordmark stands alone. Agencies show their own logo through the same `<Logo>` component.
+- Creator Pro prices are fixed per market in the `pro_prices` setting (India ₹699, UAE AED 69, elsewhere USD 19).
 - Light mode is offered on the brand dashboard only. Agency white-label changes the accent tokens only; an agency's
   fill is darkened automatically until a white label reaches 4.5:1.
 

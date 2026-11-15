@@ -25,13 +25,15 @@ export function NavLinks({ nav, variant = 'sidebar' }: { nav: NavItem[]; variant
     <nav aria-label="Main" className={variant === 'sidebar' ? 'flex flex-1 flex-col gap-1' : 'flex gap-1 overflow-x-auto border-b border-border px-3 py-2 md:hidden'}>
       {nav.map((n) => {
         const Icon = ICONS[n.icon as keyof typeof ICONS] ?? LayoutGrid;
-        return (
-          <Link key={n.href} href={n.href} title={n.label} aria-current={n.href === active ? 'page' : undefined}
+        const link = (
+          <Link key={n.href} href={n.href} aria-current={n.href === active ? 'page' : undefined}
             className={cn('flex h-10 shrink-0 items-center gap-3 whitespace-nowrap rounded-sm px-3 text-small transition-colors duration-fast', variant === 'sidebar' && 'justify-center xl:justify-start',
               n.href === active ? 'bg-surface-3 font-medium text-primary' : 'text-secondary hover:bg-surface-3 hover:text-primary')}>
             <Icon size={20} {...ICON} aria-hidden /><span className={variant === 'sidebar' ? 'sr-only xl:not-sr-only' : undefined}>{n.label}</span>
           </Link>
         );
+        // collapsed sidebar (1024px and below): the label is hidden, so each icon carries a tooltip
+        return variant === 'sidebar' ? <Tooltip key={n.href} label={n.label} side="right" className="xl:hidden">{link}</Tooltip> : link;
       })}
     </nav>
   );
@@ -47,8 +49,9 @@ export function WorkspaceSwitcher({ workspaces, active }: { workspaces: Workspac
   return (
     <Popover open={open} onOpenChange={setOpen} side="bottom" align="start" className="w-72 p-0"
       trigger={
-        <button type="button" aria-label={`Client workspace: ${current?.name ?? 'none'}. Change`} className="mt-5 flex h-12 w-full items-center justify-center gap-3 rounded-sm border border-border px-2 text-left transition-colors duration-fast hover:border-border-strong hover:bg-surface-3 xl:justify-start">
-          {current ? <Avatar name={current.name} src={current.logo} size="sm" square /> : <Building2 size={20} {...ICON} />}
+        <button type="button" title={`Client: ${current?.name ?? 'none'}`} aria-label={`Client workspace: ${current?.name ?? 'none'}. Change`} className="mt-5 flex h-12 w-full items-center justify-center gap-3 rounded-sm border border-border px-2 text-left transition-colors duration-fast hover:border-border-strong hover:bg-surface-3 xl:justify-start">
+          {/* the dot marks this tile as the client, so it is not mistaken for the agency's own mark above it */}
+          <span className="relative shrink-0">{current ? <Avatar name={current.name} src={current.logo} size="sm" square /> : <Building2 size={20} {...ICON} />}<span aria-hidden className="absolute -right-1 -top-1 size-2 rounded-full bg-accent-brand ring-2 ring-surface-1" /></span>
           <span className="hidden min-w-0 flex-1 xl:block"><span className="block truncate text-small font-medium">{current?.name ?? 'Choose a client'}</span><span className="block truncate text-caption text-tertiary">Client workspace</span></span>
           <ChevronsUpDown size={16} {...ICON} className="hidden shrink-0 text-tertiary xl:block" aria-hidden />
         </button>
@@ -87,7 +90,7 @@ export function UserMenu({ name, email, avatar, themeToggle, signOut, compact }:
   return (
     <Popover side="top" align="start" className="w-64 p-1"
       trigger={
-        <button type="button" aria-label={`Account menu for ${name}`} className={cn('flex items-center gap-3 rounded-sm text-left transition-colors duration-fast hover:bg-surface-3', compact ? 'p-1' : 'w-full justify-center p-2 xl:justify-start')}>
+        <button type="button" title={name} aria-label={`Account menu for ${name}`} className={cn('flex items-center gap-3 rounded-sm text-left transition-colors duration-fast hover:bg-surface-3', compact ? 'p-1' : 'w-full justify-center p-2 xl:justify-start')}>
           <Avatar name={name} src={avatar} size="sm" />
           {!compact && (
             <span className="hidden min-w-0 flex-1 xl:block">

@@ -3,7 +3,9 @@ import type { ReactNode } from 'react';
 import { signOut } from '@/lib/actions';
 import { hostAgency, type Session } from '@/lib/session';
 import { supabaseServer } from '@/lib/supabase-server';
-import { Avatar, DemoPill } from '@/components/ui';
+import { DemoPill } from '@/components/ui';
+import { Tooltip } from '@/components/ui/overlays';
+import { Logo } from '@/components/logo';
 import { Breadcrumb, NavLinks, NotificationsBell, UserMenu, WorkspaceSwitcher, type NavItem, type Note } from '@/components/shell-client';
 import { DEMO } from '@/lib/utils';
 
@@ -14,12 +16,7 @@ export async function whiteLabel(session?: Session | null) {
 }
 
 export function Wordmark({ name, logo, href = '/' }: { name: string; logo?: string | null; href?: string }) {
-  return (
-    <Link href={href} className="flex items-center gap-3 rounded-sm text-body-lg font-semibold">
-      {logo && <Avatar name={name} src={logo} size="sm" square />}
-      {name}
-    </Link>
-  );
+  return <Link href={href} className="flex min-w-0 items-center rounded-sm"><Logo name={name} logo={logo} agency={name !== 'TakeOne'} /></Link>;
 }
 
 /** Where a notification should take the reader, and what the link says. */
@@ -52,10 +49,12 @@ export async function Shell({ session, nav, themeToggle, children }: { session: 
   return (
     <div className="mx-auto flex min-h-screen max-w-shell">
       <aside className="sticky top-0 hidden h-screen w-16 shrink-0 flex-col border-r border-border bg-surface-1 px-2 py-5 md:flex xl:w-sidebar xl:px-4">
-        <Link href={home} className="flex h-10 items-center justify-center gap-3 rounded-sm px-2 text-body-lg font-semibold xl:justify-start" aria-label={wl.name}>
-          {wl.logo ? <Avatar name={wl.name} src={wl.logo} size="sm" square /> : <span className="xl:hidden"><Avatar name={wl.name} size="sm" square /></span>}
-          <span className="hidden truncate xl:inline">{wl.name}</span>
-        </Link>
+        <Tooltip label={wl.name} side="right" className="xl:hidden">
+          <Link href={home} className="flex h-10 items-center justify-center rounded-sm px-2 xl:justify-start" aria-label={wl.name}>
+            <span className="xl:hidden"><Logo name={wl.name} logo={wl.logo} agency={!!wl.agency} wordmark={false} /></span>
+            <span className="hidden min-w-0 xl:inline-flex"><Logo name={wl.name} logo={wl.logo} agency={!!wl.agency} /></span>
+          </Link>
+        </Tooltip>
         {isAgency && session.brands.length > 0 && <WorkspaceSwitcher workspaces={session.brands.map((b) => ({ id: b.id, name: b.name, logo: b.logo, country: b.country }))} active={session.brand?.id ?? null} />}
         <div className="mt-5 flex flex-1 flex-col"><NavLinks nav={nav} /></div>
         <div className="border-t border-border pt-3">{user}</div>
