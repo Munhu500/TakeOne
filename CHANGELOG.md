@@ -1,5 +1,20 @@
 # Changelog
 
+## Web premium overhaul 3 of 4 — brand and agency dashboards
+- Shell: 248px sidebar (icons only at 1024px and below), agency workspace switcher with search, user menu with theme
+  and sign-out, breadcrumb bar with notifications (unread count, marks read on open).
+- Brand overview: results row, "Review your new ads" strip, campaigns with progress, activity grouped by day, first-run checklist.
+- Review room: full-screen dark player; up/down, J/K, wheel or swipe between variants, left/right between creators;
+  select up to three included, extras and partnership ads priced in a sticky bar with one "Confirm selection".
+- Campaign detail (Overview, Creators, Deliveries, Licences, Payments) and a four-step wizard with autosave.
+- Usage & licences: summary, bulk renew, calm renewal dialog with the new end date, toast on success.
+- Leaderboard: podium, compact filters, earnings bands in local style (₹4.2L+, AED 18.3K+).
+- Billing with filters; agency clients (stats, markup popover, add-client drawer), white-label with logo upload,
+  colour feedback, DNS check and live preview; agency billing with cost and client PDFs and a totals row.
+- Ranking: main board needs 3 completed campaigns; order is (wins + 2) / (submissions + 4), then rating, then completed.
+- Each campaign carries its own licence term, 35–45 days (migration `20260101000011`).
+- Demo data: creator names match their countries; transcripts and hooks match each product; realistic win rates.
+
 ## Web premium overhaul 2 of 4 — landing page
 - New landing at `/` with a creators/brands toggle (remembered per tab; `/creators` and `/brands` preselect it) that
   swaps the hero, problem, how-it-works and final call to action. Sections: proof, earnings, brand results, live

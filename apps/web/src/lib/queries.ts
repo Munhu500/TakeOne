@@ -16,12 +16,12 @@ export function toStats(r: BoardRow, period: 'month' | 'all') {
   return {
     creatorId: r.creator_id, wins: period === 'month' ? r.month_wins : r.wins, submissions: period === 'month' ? r.month_submissions : r.submissions,
     campaignsCompleted: period === 'month' ? r.month_completed : r.campaigns_completed, ratingAvg: r.rating_avg === null ? null : Number(r.rating_avg), ratingCount: r.rating_count,
-    joinedAt: r.joined_at, country: r.country, categories: r.categories,
+    careerCompleted: r.campaigns_completed, joinedAt: r.joined_at, country: r.country, categories: r.categories,
   };
 }
 /** creator id → all-time leaderboard rank */
 export async function rankMap(): Promise<Map<string, number>> {
-  return new Map(rankCreators((await leaderboardRows()).map((r) => toStats(r, 'all'))).map((r) => [r.creatorId, r.rank]));
+  return new Map(rankCreators((await leaderboardRows()).map((r) => toStats(r, 'all')), { board: 'all' }).map((r) => [r.creatorId, r.rank]));
 }
 export async function creatorsByIds(ids: string[]): Promise<{ creators: Map<string, CreatorPublic>; socials: Map<string, SocialAccountPublic[]> }> {
   const creators = new Map<string, CreatorPublic>();

@@ -20,6 +20,7 @@ const VOCAB = {
   variant: { coming_soon: ['Planned', 'neutral'], processing: ['Rendering', 'accent'], ready: ['Ready', 'neutral'], qa_pending: ['In review', 'accent'], qa_rejected: ['Needs changes', 'danger'], delivered: ['Preview', 'neutral'], selected: ['Licensed', 'success'], licensed: ['Licensed', 'success'], failed: ['Failed', 'danger'] },
   dispute: { open: ['Open', 'warning'], resolved_creator: ['Resolved for creator', 'success'], resolved_brand: ['Resolved for brand', 'neutral'], refunded: ['Refunded', 'neutral'] },
   withdrawal: { requested: ['Requested', 'warning'], processing: ['Processing', 'accent'], paid: ['Paid', 'success'], failed: ['Failed', 'danger'] },
+  client: { active: ['Active', 'success'], idle: ['No live campaigns', 'neutral'], new: ['New', 'neutral'] },
   kyc: { none: ['Not started', 'neutral'], pending: ['In review', 'accent'], verified: ['Verified', 'success'], rejected: ['Rejected', 'danger'] },
 } satisfies Record<string, Record<string, [string, Tone]>>;
 export type StatusKind = keyof typeof VOCAB;

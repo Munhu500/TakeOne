@@ -9,11 +9,12 @@ const { chromium } = require('playwright');
   await page.goto(base + '/login'); await page.fill('#email', 'brand@takeone.demo'); await page.fill('#password', 'TakeOne-demo-2026'); await page.click('button[type=submit]');
   await page.waitForURL((u) => u.pathname.startsWith('/brand'), { timeout: 30000 });
   await page.goto(base + url); await page.waitForTimeout(2000);
-  await page.getByText('Pick (included)').first().click();
-  await page.getByText(/Select 1 variant/).click(); await page.getByText('Licensed').first().waitFor({ timeout: 20000 }); console.log('selected + licensed');
-  await page.getByText(/^Whitelist ·/).first().click(); await page.getByText(/whitelisted/).first().waitFor({ timeout: 20000 }); console.log('whitelist add-on bought');
-  await page.getByText('Set as winning post').first().click(); await page.getByText('Winner').first().waitFor({ timeout: 20000 }); console.log('winner chosen');
-  await page.getByText('Approve and release payment').click(); await page.getByText(/Approved on/).waitFor({ timeout: 20000 }); console.log('approved');
+  // Review room: select the top variant (S), add a partnership ad, confirm
+  await page.keyboard.press('s');
+  await page.getByRole('switch').click();
+  await page.getByRole('button', { name: 'Confirm selection' }).click(); await page.getByText('Licensed').first().waitFor({ timeout: 30000 }); console.log('selected + licensed, partnership ad bought');
+  await page.getByRole('button', { name: 'Creator posts this one' }).click(); await page.getByRole('button', { name: 'Choose this ad' }).click(); await page.getByText('Winning post').first().waitFor({ timeout: 20000 }); console.log('winner chosen');
+  await page.getByRole('button', { name: 'Approve work' }).click(); await page.getByRole('button', { name: 'Approve and release payment' }).click(); await page.getByText(/^Approved /).first().waitFor({ timeout: 20000 }); console.log('approved');
   await page.screenshot({ path: S + '/e-brand.png', fullPage: true });
   await browser.close();
 })().catch((e) => { console.error('E2E FAILED', e.message.slice(0, 400)); process.exit(1); });

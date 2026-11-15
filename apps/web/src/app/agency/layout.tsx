@@ -6,5 +6,5 @@ import { Shell } from '@/components/shell';
 export default async function AgencyLayout({ children }: { children: ReactNode }) {
   const s = await requireRole('agency_member');
   if (!s.agency) redirect('/onboarding');
-  return <Shell session={s} nav={[{ href: '/agency', label: 'Clients', icon: 'building' }, { href: '/agency/branding', label: 'White-label', icon: 'palette' }, { href: '/brand', label: 'Campaigns', icon: 'megaphone' }, { href: '/brand/billing', label: 'Billing', icon: 'card' }]}>{children}</Shell>;
+  return <Shell session={s} nav={[{ href: '/agency', label: 'Clients', icon: 'building' }, { href: '/agency/branding', label: 'White-label', icon: 'palette' }, { href: '/brand', label: 'Campaigns', icon: 'megaphone' }, { href: '/agency/billing', label: 'Billing', icon: 'card' }]}>{children}</Shell>;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  availableAt, campaignInputSchema, canTransition, earningsBand, effectiveTier, evaluateGuarantee, FORMAT_LIST, formatsForTier, isRisingStar, maskContactInfo,
+  availableAt, campaignInputSchema, canTransition, compactLocal, creatorScore, earningsBand, exactEarnings, MAIN_BOARD_MIN_COMPLETED, effectiveTier, evaluateGuarantee, FORMAT_LIST, formatsForTier, isRisingStar, maskContactInfo,
   mockPublicMetrics, nextLedgerState, onboardingSchema, rankBrands, rankCreators, scoreMetricPlausibility, shouldFlagUser, sumBalances, V1_FORMATS, validateWithdrawal,
   withdrawalMethodsFor, withdrawalSchema,
 } from '../src';
@@ -118,19 +118,36 @@ describe('leaderboard ranking', () => {
   const mk = (id: string, wins: number, submissions: number, done: number, rating: number | null, extra = {}) => ({
     creatorId: id, wins, submissions, campaignsCompleted: done, ratingAvg: rating, ratingCount: rating ? done : 0, joinedAt: '2025-01-01T00:00:00Z', country: 'IN', categories: ['beauty'], ...extra,
   });
-  it('ranks by win rate, completed campaigns and rating', () => {
+  it('orders by weighted score (wins + 2) / (submissions + 4) and shows the raw win rate', () => {
     const r = rankCreators([mk('low', 2, 20, 10, 4.2), mk('top', 16, 20, 18, 4.9), mk('mid', 9, 20, 12, 4.5)], { now });
     expect(r.map((x) => x.creatorId)).toEqual(['top', 'mid', 'low']);
     expect(r[0]).toMatchObject({ rank: 1, winRate: 0.8 });
+    expect(r[0]!.score).toBeCloseTo(18 / 24);
+    expect(creatorScore({ wins: 0, submissions: 0 })).toBe(0.5);
+  });
+  it('breaks ties by rating, then completed campaigns', () => {
+    const r = rankCreators([mk('fewer', 5, 10, 5, 4.5), mk('rated', 5, 10, 4, 4.9), mk('more', 5, 10, 9, 4.5)], { now });
+    expect(r.map((x) => x.creatorId)).toEqual(['rated', 'more', 'fewer']);
   });
   it('never uses follower count', () => {
     const a = rankCreators([mk('a', 5, 10, 5, 4.5, { followers: 10 }), mk('b', 5, 10, 5, 4.5, { followers: 9_000_000 })], { now });
     expect(a[0]!.score).toBe(a[1]!.score);
     expect(a[0]!.creatorId).toBe('a');
   });
-  it('smooths tiny samples so 1-for-1 does not beat a proven record', () => {
-    const r = rankCreators([mk('lucky', 1, 1, 1, 5), mk('proven', 40, 50, 30, 4.8)], { now });
-    expect(r[0]!.creatorId).toBe('proven');
+  it('a small sample cannot beat a proven record', () => {
+    const r = rankCreators([mk('lucky', 3, 3, 3, 5), mk('proven', 40, 50, 30, 4.8)], { now });
+    expect(r[0]!.creatorId).toBe('proven'); // 5/7 = 0.71 < 42/54 = 0.78
+  });
+  it('main board needs 3 completed campaigns; everyone else is a Rising Star', () => {
+    const rows = [mk('veteran', 8, 10, 12, 4.8), mk('two', 2, 2, 2, 5), mk('none', 0, 0, 0, null), mk('newpro', 4, 5, 4, 4.7, { joinedAt: '2026-04-15T00:00:00Z' })];
+    expect(rankCreators(rows, { now }).map((r) => r.creatorId)).toEqual(['veteran', 'newpro']);
+    expect(rankCreators(rows, { board: 'rising', now }).map((r) => r.creatorId).sort()).toEqual(['newpro', 'none', 'two']);
+    expect(rankCreators(rows, { board: 'all', now })).toHaveLength(4);
+    expect(MAIN_BOARD_MIN_COMPLETED).toBe(3);
+  });
+  it('monthly boards judge eligibility on career totals', () => {
+    const quietMonth = mk('quiet', 1, 1, 0, 4.8, { careerCompleted: 9 });
+    expect(rankCreators([quietMonth], { now }).map((r) => r.creatorId)).toEqual(['quiet']);
   });
   it('filters by country, category and rising stars', () => {
     const rows = [mk('in', 5, 10, 5, 4.5), mk('ae', 5, 10, 5, 4.5, { country: 'AE', categories: ['tech'] }), mk('new', 3, 5, 2, 4.7, { joinedAt: '2026-04-15T00:00:00Z' })];
@@ -149,7 +166,14 @@ describe('leaderboard ranking', () => {
   it('shows earnings as bands', () => {
     expect(earningsBand(6_200_00, 'USD', 'USD', undefined, 'this month')).toBe('$5K+ this month');
     expect(earningsBand(50_00, 'USD', 'USD')).toBe('Under $100');
-    expect(earningsBand(9_000_000, 'INR', 'INR')).toMatch(/^₹.*\+$/);
+    // local style, no minor units: lakh for India, K for the UAE
+    expect(earningsBand(6_200_00, 'USD', 'INR')).toBe('₹4.2L+');
+    expect(earningsBand(6_200_00, 'USD', 'AED')).toBe('AED 18.3K+');
+    expect(compactLocal(420_000_00, 'INR')).toBe('₹4.2L');
+    expect(compactLocal(1_500_000_00, 'AED')).toBe('AED 1.5M');
+    expect(compactLocal(15_000_00, 'AED')).toBe('AED 15K');
+    expect(compactLocal(13_000_000_00, 'INR')).toBe('₹1.3Cr');
+    expect(exactEarnings(123_456_78, 'INR', 'INR')).not.toMatch(/\.\d/);
   });
 });
 

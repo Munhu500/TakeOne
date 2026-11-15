@@ -33,13 +33,14 @@ $$;
 do $$
 declare
   pw_done boolean; i int; r record; cid uuid; hero uuid := 'aaaaaaaa-0000-4000-8000-000000000001'; bid uuid; agency uuid := 'a9000000-0000-4000-8000-000000000001';
-  names text[] := array['Priya Sharma','Arjun Mehta','Fatima Al Mansoori','Rohan Kapoor','Layla Hassan','Ananya Iyer','Omar Khalid','Sneha Reddy','Zayed Al Falasi','Kavya Nair',
-    'Mariam Saeed','Vikram Singh','Noura Al Hashimi','Ishaan Verma','Hessa Al Suwaidi','Meera Pillai','Khalid Rahman','Tanvi Desai','Salma Yousef','Aditya Rao',
-    'Reem Al Ketbi','Nikhil Joshi','Dana Farouk','Pooja Bhatt','Hamdan Al Marri','Riya Chatterjee','Yousef Nasser','Aisha Qureshi','Dev Malhotra','Lina Haddad'];
+  -- odd = India, even = UAE (4 is moved to India below): every name matches its country and flag
+  names text[] := array['Priya Sharma','Layla Al Mansoori','Ananya Iyer','Rohan Kapoor','Sneha Reddy','Omar Khalid','Kavya Nair','Fatima Al Falasi','Arjun Mehta','Zayed Al Hashimi','Meera Joshi','Noura Al Suwaidi','Vikram Singh','Hamdan Al Marri','Ishita Bose','Mariam Al Shamsi','Aditya Rao','Khalid Al Nuaimi','Tanvi Deshmukh','Aisha Al Ketbi','Karan Malhotra','Saif Al Zaabi','Riya Chatterjee','Hessa Al Mheiri','Dev Patel','Rashid Al Dhaheri','Pooja Menon','Latifa Al Qasimi','Nikhil Verma','Salama Al Ameri'];
   cats text[] := array['beauty','fashion','fitness','food','tech','lifestyle'];
   camp record; t uuid; fmt text; fmts text[] := array['hook_first','testimonial_tight','day_in_life','silent_montage','language_version'];
   soon text[] := array['unboxing_first_use','before_after','three_reasons','reaction_first_impression','comparison'];
-  hooks jsonb := '{"hook_first":["My skin looked tired by 3pm. Not anymore.","I stopped hiding my skin on calls","Dull skin? Watch this first"],"testimonial_tight":["30 days, one serum, honest verdict","My honest month with this serum","Would I buy it again? Yes."],"day_in_life":["It fits into my actual morning","My 2-minute morning step","The step I never skip now"],"silent_montage":["Dull → glow in 30 days","One serum. Real skin.","Watch the texture"],"language_version":["30 दिन, एक सीरम, सच्ची राय","मेरी असली राय","क्या मैं दोबारा खरीदूंगी? हाँ"]}';
+  -- hooks and transcripts per take, so each matches its product (1 serum, 2 sunscreen, 3 hair mist)
+  hooks jsonb := '{"1": {"hook_first": ["My skin looked tired by 3pm. Not anymore.", "I stopped hiding my skin on calls", "Dull skin? Watch this first"], "testimonial_tight": ["30 days, one serum, honest verdict", "My honest month with this serum", "Would I buy it again? Yes."], "day_in_life": ["It fits into my actual morning", "My 2-minute morning step", "The step I never skip now"], "silent_montage": ["Dull → glow in 30 days", "One serum. Real skin.", "Watch the texture"], "language_version": ["30 दिन, एक सीरम, सच्ची राय", "मेरी असली राय", "क्या मैं दोबारा खरीदूंगी? हाँ"]}, "2": {"hook_first": ["I skipped sunscreen for years. Not anymore.", "No white cast. I checked in daylight.", "Sunscreen that vanishes on my skin"], "testimonial_tight": ["Two weeks, every commute, honest verdict", "My honest fortnight with this SPF", "Would I buy it again? Yes."], "day_in_life": ["It goes on before my commute", "The last step before I leave", "Under makeup, every morning"], "silent_montage": ["No white cast. Watch.", "Invisible on, all day", "SPF 50, zero residue"], "language_version": ["दो हफ्ते, रोज़ का सफ़र, सच्ची राय", "मेरी असली राय", "क्या मैं दोबारा खरीदूंगी? हाँ"]}, "3": {"hook_first": ["My hair never held a scent. Until this.", "Hair mists dried my hair out. Not this one.", "Oud and rose that lasts all day"], "testimonial_tight": ["Two weeks, one hair mist, honest verdict", "My honest fortnight with this mist", "Would I buy it again? Yes."], "day_in_life": ["The last thing I do before I leave", "My finishing step, every morning", "It layers with my perfume"], "silent_montage": ["One mist. All-day oud and rose.", "Light, not oily. Watch.", "Alcohol-free, all day"], "language_version": ["أسبوعان، بخاخ واحد، رأي صادق", "رأيي الحقيقي", "هل أشتريه مجدداً؟ نعم"]}}';
+  transcripts jsonb := '{"1": "Okay so my skin used to look really tired by the afternoon. I have been using this serum every morning for thirty days. It is lightweight, it is not sticky, and it sits well under sunscreen. Honestly my skin looks brighter and I would buy it again.", "2": "I used to skip sunscreen because it felt heavy and left a white cast. I have worn this one every day for two weeks on my commute. It disappears on my skin, it sits under makeup and it does not run when I sweat. I would buy it again.", "3": "I love layering fragrance, but most hair mists dry my hair out. I have used this one every day for two weeks. The oud and rose last all day, it is alcohol-free, and it feels light, not oily. I would buy it again."}';
   scores jsonb := '{"hook_first":91,"testimonial_tight":84,"day_in_life":78,"silent_montage":73,"language_version":69}';
   a1 uuid; a2 uuid; a3 uuid; a4 uuid; lic uuid; pay uuid; w uuid;
 begin
@@ -75,7 +76,8 @@ begin
       categories = array[cats[1 + i % 6], cats[1 + (i + 2) % 6]], tier = case when i % 3 = 1 then 'pro' else 'free' end, is_founding = i in (3, 12),
       uae_permit_number = case when i % 2 = 0 then 'MC-ADV-' || (48200 + i * 37) end,
       submissions_count = case when i > 22 then 3 + i % 5 else 12 + (i * 7) % 40 end,
-      wins_count = case when i > 22 then 1 + i % 3 else least(12 + (i * 7) % 40, 4 + (i * 11) % 30) end,
+      -- established creators win between about a third and four fifths of their submissions (no walls of 100%)
+      wins_count = case when i > 22 then 1 + i % 3 else round((12 + (i * 7) % 40) * (0.32 + ((i * 17) % 47) / 100.0)) end,
       campaigns_completed = case when i > 22 then 1 + i % 3 else 3 + (i * 5) % 28 end,
       rating_avg = 3.9 + ((i * 13) % 11) / 10.0, rating_count = case when i > 22 then 1 + i % 3 else 3 + (i * 5) % 20 end,
       show_exact_earnings = i % 5 = 0, kyc_status = case when i % 4 = 1 then 'verified' else 'none' end, tax_id = case when i = 1 then 'ABCPS1234K' end,
@@ -84,7 +86,7 @@ begin
       (cid, 'instagram', lower(replace(names[i], ' ', '.')), 8000 + i * 4100, 3000 + i * 1900, 2.5 + (i % 6) * 0.7, case i % 3 when 0 then 'checked' when 1 then 'api_verified' else 'self_reported' end, case when i % 3 < 2 then now() - interval '20 days' end, 92, jsonb_build_object('followers', 7900 + i * 4000, 'avgLikes', 200 + i * 110, 'avgComments', 12 + i)),
       (cid, case when i % 2 = 0 then 'tiktok' else 'youtube' end, lower(replace(names[i], ' ', '')) || case when i % 2 = 0 then '' else 'vlogs' end, 5000 + i * 2600, 4000 + i * 2300, 3.1 + (i % 4) * 0.9, case when i % 2 = 1 and i % 3 = 1 then 'api_verified' else 'self_reported' end, null, 88, null);
     insert into creator_monthly_stats (creator_id, month, wins, submissions, completed, earnings_usd_minor)
-      values (cid, date_trunc('month', now())::date, 1 + (i * 3) % 6, 4 + (i * 3) % 7, 1 + i % 4, 12000 + ((i * 7919) % 90) * 9000),
+      values (cid, date_trunc('month', now())::date, 1 + (i * 3) % 4, 5 + (i * 3) % 7, 1 + i % 4, 12000 + ((i * 7919) % 90) * 9000),
              (cid, (date_trunc('month', now()) - interval '1 month')::date, 2 + i % 5, 6 + i % 6, 1 + i % 3, 20000 + ((i * 104729) % 70) * 8000);
     insert into terms_acceptances (profile_id, terms_type, version) values (cid, 'creator_terms', '2026-01');
     insert into guarantee_tracking (creator_id, window_start) values (cid, now() - interval '25 days');
@@ -163,15 +165,15 @@ begin
   for r in select * from (values (1, a1, hero, 'licensed'), (2, a3, 'aaaaaaaa-0000-4000-8000-000000000005'::uuid, 'delivered'), (3, a4, 'aaaaaaaa-0000-4000-8000-000000000002'::uuid, 'qa_pending')) as x(n, aid, creator, st) loop
     t := ('7a000000-0000-4000-8000-00000000000' || r.n)::uuid;
     insert into takes (id, assignment_id, storage_path, duration, product_check, product_check_reason, dub_language, transcript, created_at)
-    values (t, r.aid, r.creator || '/seed-take.mp4', 24, 'passed', 'Product label clearly visible in 4 of 5 sampled frames.', 'hi',
-      '{"language":"en","text":"Okay so my skin used to look really tired by the afternoon. I have been using this serum every morning for thirty days. It is lightweight, it is not sticky, and it sits well under sunscreen. Honestly my skin looks brighter and I would buy it again."}', now() - interval '17 days');
+    values (t, r.aid, r.creator || '/seed-take.mp4', 24, 'passed', 'Product label clearly visible in 4 of 5 sampled frames.', case when r.n = 3 then 'ar' else 'hi' end,
+      jsonb_build_object('language', 'en', 'text', transcripts ->> r.n::text), now() - interval '17 days');
     foreach fmt in array fmts loop
       insert into variants (take_id, format, storage_path, renditions, preview_renditions, thumbnail, hook_text, hook_options, score, score_reason, is_synthetic, ai_disclosure, language, visible_to_brand, status)
       values (t, fmt, null, '{}'::jsonb, '{}'::jsonb,
-        null, hooks -> fmt ->> 0, array(select jsonb_array_elements_text(hooks -> fmt)), (scores ->> fmt)::int,
+        null, hooks -> r.n::text -> fmt ->> 0, array(select jsonb_array_elements_text(hooks -> r.n::text -> fmt)), (scores ->> fmt)::int,
         case fmt when 'hook_first' then 'Problem lands in 1.4s, hook is 8 words, product on screen by 0:04. Strong brief fit.' when 'testimonial_tight' then 'Clean verdict kept word for word; filler removed. Slightly slow first line.'
-          when 'day_in_life' then 'Scene suits the audience; foreground untouched. Hook is softer than Hook First.' when 'silent_montage' then 'Reads well muted; one caption card runs long.' else 'Faithful Hindi translation of the verdict; captions match.' end,
-        fmt in ('day_in_life', 'language_version'), case when fmt in ('day_in_life', 'language_version') then 'Enable the platform’s AI-info label when publishing' end, case when fmt = 'language_version' then 'hi' end,
+          when 'day_in_life' then 'Scene suits the audience; foreground untouched. Hook is softer than Hook First.' when 'silent_montage' then 'Reads well muted; one caption card runs long.' else 'Faithful ' || case when r.n = 3 then 'Arabic' else 'Hindi' end || ' translation of the verdict; captions match.' end,
+        fmt in ('day_in_life', 'language_version'), case when fmt in ('day_in_life', 'language_version') then 'Enable the platform’s AI-info label when publishing' end, case when fmt = 'language_version' then (case when r.n = 3 then 'ar' else 'hi' end) end,
         r.st <> 'qa_pending' and not (r.n = 1 and fmt = 'language_version'),
         case when r.n = 1 then (case when fmt in ('hook_first', 'testimonial_tight', 'day_in_life') then 'licensed' when fmt = 'silent_montage' then 'delivered' else 'ready' end) else r.st end);
     end loop;

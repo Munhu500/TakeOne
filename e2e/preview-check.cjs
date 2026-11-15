@@ -27,21 +27,21 @@ const ok = (name, pass, note = '') => { results.push(`${pass ? 'PASS' : 'FAIL'} 
   await p.goto(BASE + '/brand/');
   ok('/brand/ signed out → sign-in page', await see(p, 'Sign in') && p.url().includes('/login'));
   await login(p, 'brand@takeone.demo');
-  ok('brand login → dashboard', await see(p, 'Kaya Glow') && await see(p, 'In escrow') && !(await p.getByText('Campaign credit').count()), p.url().replace(BASE, ''));
+  ok('brand login → dashboard', await see(p, 'Kaya Glow') && await see(p, 'Winners licensed') && await see(p, 'Review your new ads') && !(await p.getByText('Campaign credit').count()), p.url().replace(BASE, ''));
   await p.getByText('Vitamin C Glow Serum — 30-day results').first().click();
   ok('open a campaign (id in URL)', await see(p, 'Creator shot list') && /\/brand\/campaigns\/c0000000/.test(p.url()), p.url().replace(BASE, ''));
-  await p.getByRole('link', { name: /Creators & variants/ }).click();
-  await p.getByRole('link', { name: /Open variants|Review variants/ }).first().click();
-  const variants = await see(p, 'Hook First') && await see(p, 'Licensed');
+  await p.getByRole('link', { name: /^Deliveries/ }).click();
+  await p.locator('a[href*="/review/"]').first().click();
+  const variants = await see(p, 'Hook First') && await see(p, 'Licensed') && await see(p, 'Why this score');
   // footage is a neutral frame until real files are supplied (apps/web/public/media or rendered variants)
   const frames = await p.getByText('Footage coming soon').count();
   const videos = await p.locator('video').count();
   ok('view variants (frames or footage, partnership ad naming)', variants && frames + videos > 0 && !(await p.getByText(/whitelist/i).count()), p.url().replace(BASE, ''));
   await p.screenshot({ path: `${SHOTS}/pv-brand-review.png` });
   await p.reload();
-  ok('refresh on brand deep link', await see(p, 'Hook First') && await see(p, 'Winning post'));
+  ok('refresh on brand deep link', await see(p, 'Hook First') && await see(p, 'Winning post') && await see(p, 'Download'));
   await p.goto(BASE + '/brand/billing/');
-  const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 20000 }).catch(() => null), p.getByText('Invoice PDF').first().click()]);
+  const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 20000 }).catch(() => null), p.getByRole('button', { name: /Download invoice/ }).first().click()]);
   const pdfPath = dl ? await dl.path() : null;
   ok('invoice PDF generated in the browser', !!pdfPath && require('fs').readFileSync(pdfPath).subarray(0, 5).toString() === '%PDF-', dl ? dl.suggestedFilename() : 'no download');
   await p.context().close();
@@ -56,7 +56,7 @@ const ok = (name, pass, note = '') => { results.push(`${pass ? 'PASS' : 'FAIL'} 
   ok('/agency/?agency=mirage shows agency branding', branded && accent.toUpperCase() === '#E0A526' && !(await p.getByText('TakeOne', { exact: true }).count()), `accent ${accent}, title "${await p.title()}"`);
   await p.screenshot({ path: `${SHOTS}/pv-agency-login.png` });
   await login(p, 'agency@takeone.demo');
-  ok('agency login → client workspaces', await see(p, 'Client workspaces') && await see(p, 'Add a client') && await see(p, 'Open workspace'));
+  ok('agency login → client workspaces', await see(p, 'Your markup earned') && await see(p, 'Add client') && await see(p, 'Open workspace'));
   await p.goto(BASE + '/agency/branding/'); await p.reload();
   ok('refresh on agency deep link', await see(p, 'White-label') && await see(p, 'Save branding'));
   await p.context().close();

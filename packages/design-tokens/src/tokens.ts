@@ -115,7 +115,7 @@ export const captionLabel = { tracking: '0.12em', transform: 'uppercase' } as co
 /** 4pt spacing scale, keyed like Tailwind (key × 4 = px). 20 is the mobile gutter / mobile card padding. */
 export const space = { 0: 0, 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 12: 48, 16: 64, 24: 96, 32: 128 } as const;
 export const radius = { sm: 10, md: 16, lg: 24, xl: 32, full: 999 } as const;
-export const layout = { content: 1200, gutter: 24, gutterMobile: 20, columns: 12, sidebar: 240, aside: 340, prose: '65ch', breakpoint: { sm: 640, md: 768, lg: 1024, xl: 1280, '2xl': 1440 } } as const;
+export const layout = { content: 1200, gutter: 24, gutterMobile: 20, columns: 12, sidebar: 248, aside: 340, prose: '65ch', breakpoint: { sm: 640, md: 768, lg: 1024, xl: 1280, '2xl': 1440 } } as const;
 /** Fixed control and row heights. */
 export const size = { 'control-sm': 36, 'control-md': 44, 'control-lg': 52, input: 48, row: 56, 'row-media': 72, icon: { sm: 16, md: 20, lg: 24 } } as const;
 export const iconStroke = 1.5;

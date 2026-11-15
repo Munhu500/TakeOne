@@ -6,7 +6,7 @@ const ADMIN = ['qa', 'verification', 'users', 'campaigns', 'disputes', 'payouts'
 const PATHS = [
   '', 'login', 'signup', 'onboarding', 'dashboard', 'creators', 'brands', 'agencies', 'about', 'contact', 'privacy', 'terms', 'demo', 'auth/callback', '_design',
   'brand', 'brand/campaigns/new', 'brand/campaigns/_', 'brand/campaigns/_/review/_', 'brand/licenses', 'brand/leaderboard', 'brand/billing',
-  'agency', 'agency/branding', 'admin', ...ADMIN.map((s) => `admin/${s}`),
+  'agency', 'agency/branding', 'agency/billing', 'admin', ...ADMIN.map((s) => `admin/${s}`),
 ];
 export const dynamicParams = false;
 export function generateStaticParams() {

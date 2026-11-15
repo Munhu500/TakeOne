@@ -16,6 +16,14 @@ the only mobile change so far is one line of copy ("whitelisting" → "partnersh
 - **"Whitelist" is now "Partnership ad"** everywhere users see it. Wallet ledger descriptions come from the database and
   are already renamed. Use `LICENSE_LABELS` from `@takeone/shared` for any new label.
 
+- **Leaderboard rules changed in shared code.** `rankCreators` now shows the main board (3+ completed campaigns) by
+  default and orders by `(wins + 2) / (submissions + 4)`, then rating, then completed. The mobile leaderboard picks
+  this up automatically; pass `careerCompleted` for the monthly view and use `exactEarnings` (no minor units) for
+  creators who show exact figures. Earnings bands now read "₹4.2L+".
+- **Licence term is per campaign** (`campaigns.license_term_days`, 35–45). Campaign detail should read it from the
+  campaign instead of `LICENSE_DEFAULTS.termDays`.
+- **Demo creators were renamed** so names match countries. Nothing to change, but screenshots will differ.
+
 ## Design system (when mobile is restyled)
 - Adopt `@takeone/design-tokens` (colours, type scale, 4pt spacing, radii, motion presets) in `src/theme`. The presets are
   plain objects so they can drive Reanimated/Moti.

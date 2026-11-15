@@ -1,26 +1,9 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useTransition, type ReactNode } from 'react';
-import { LogOut, Moon, Sun } from 'lucide-react';
+import { useState, useTransition, type ReactNode } from 'react';
 import { rpc, type ActionResult } from '@/lib/actions';
-import { Button, ICON, type ButtonSize, type ButtonVariant } from '@/components/ui';
-import { ConfirmDialog, IconButton } from '@/components/ui/overlays';
-
-/** Brand dashboard only. */
-export function ThemeToggle() {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  useEffect(() => setTheme((document.documentElement.dataset.theme as 'dark' | 'light') ?? 'dark'), []);
-  const flip = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
-    try { localStorage.setItem('t1-theme', next); } catch { /* private mode */ }
-    setTheme(next);
-  };
-  return <IconButton label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} onClick={flip}>{theme === 'dark' ? <Sun size={16} {...ICON} /> : <Moon size={16} {...ICON} />}</IconButton>;
-}
-export function SignOutButton() {
-  return <IconButton label="Sign out" type="submit"><LogOut size={16} {...ICON} /></IconButton>;
-}
+import { Button, type ButtonSize, type ButtonVariant } from '@/components/ui';
+import { ConfirmDialog } from '@/components/ui/overlays';
 
 /**
  * Button that runs a server action, shows progress at a fixed width and surfaces the error inline.

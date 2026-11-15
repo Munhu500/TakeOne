@@ -30,8 +30,8 @@ export function ProductImage({ name, src, ratio = 'portrait', radius = 'md', cla
  * Video slot. Plays `src` (a signed URL or a /media path) when there is footage; otherwise a dark frame with a
  * subtle shimmer and "Footage coming soon". `media` names a file under /public/media to use when no src is given.
  */
-export function VideoFrame({ src, poster, media, ratio = 'reel', radius = 'md', label, controls = true, autoPlay, priority, className }: {
-  src?: string | null; poster?: string | null; media?: string; ratio?: Ratio; radius?: keyof typeof RADIUS; label: string; controls?: boolean; autoPlay?: boolean; /** above the fold: the poster is fetched first and the video waits for it */ priority?: boolean; className?: string;
+export function VideoFrame({ src, poster, media, ratio = 'reel', radius = 'md', label, controls = true, autoPlay, priority, compact, className }: {
+  src?: string | null; poster?: string | null; media?: string; ratio?: Ratio; radius?: keyof typeof RADIUS; label: string; controls?: boolean; autoPlay?: boolean; /** above the fold: the poster is fetched first and the video waits for it */ priority?: boolean; /** thumbnail size: no placeholder wording */ compact?: boolean; className?: string;
 }) {
   const file = src ?? (media ? mediaFile(media, ['mp4', 'webm']) : null);
   const still = poster ?? (media ? mediaFile(media, IMAGE_EXTS) : null);
@@ -48,7 +48,7 @@ export function VideoFrame({ src, poster, media, ratio = 'reel', radius = 'md', 
   return (
     <span role="img" aria-label={`${label}: footage coming soon`} className={cn(frame, 'grid place-items-center')}>
       <span aria-hidden className="skeleton absolute inset-0 rounded-none opacity-40" />
-      <span className="caption-label relative">Footage coming soon</span>
+      {!compact && <span className="caption-label relative px-2 text-center">Footage coming soon</span>}
     </span>
   );
 }

@@ -28,11 +28,11 @@ export function IconButton({ label, children, className, ...p }: ButtonHTMLAttri
     </Tooltip>
   );
 }
-export function Popover({ trigger, children, align = 'start' }: { trigger: ReactNode; children: ReactNode; align?: 'start' | 'center' | 'end' }) {
+export function Popover({ trigger, children, align = 'start', side, className, open, onOpenChange }: { trigger: ReactNode; children: ReactNode; align?: 'start' | 'center' | 'end'; side?: 'top' | 'right' | 'bottom' | 'left'; className?: string; open?: boolean; onOpenChange?: (o: boolean) => void }) {
   return (
-    <Pop.Root>
+    <Pop.Root open={open} onOpenChange={onOpenChange}>
       <Pop.Trigger asChild>{trigger}</Pop.Trigger>
-      <Pop.Portal><Pop.Content align={align} sideOffset={8} className={cn(FLOAT, 'w-72 p-4 text-small')}>{children}</Pop.Content></Pop.Portal>
+      <Pop.Portal><Pop.Content align={align} side={side} sideOffset={8} collisionPadding={12} className={cn(FLOAT, 'w-72 p-4 text-small', className)}>{children}</Pop.Content></Pop.Portal>
     </Pop.Root>
   );
 }

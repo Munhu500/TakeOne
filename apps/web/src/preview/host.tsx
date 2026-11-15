@@ -44,6 +44,7 @@ const ROUTES: [pattern: string, load: () => Promise<PageFn>, layout?: () => Prom
   ['/brand/billing', () => import('@/app/brand/billing/page').then(page), brandLayout],
   ['/agency', () => import('@/app/agency/page').then(page), agencyLayout],
   ['/agency/branding', () => import('@/app/agency/branding/page').then(page), agencyLayout],
+  ['/agency/billing', () => import('@/app/agency/billing/page').then(page), agencyLayout],
   ['/admin', () => import('@/app/admin/page').then(page), adminLayout],
   ['/admin/:section', () => import('@/app/admin/[section]/page').then(page), adminLayout],
 ];

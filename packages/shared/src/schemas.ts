@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CATEGORIES, COUNTRY_CODES, PLATFORMS, WITHDRAWAL_METHODS, type WithdrawalMethod } from './config';
+import { CATEGORIES, COUNTRY_CODES, LICENSE_TERM, PLATFORMS, WITHDRAWAL_METHODS, type WithdrawalMethod } from './config';
 import { FORMAT_IDS } from './formats';
 
 export const minor = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
@@ -48,6 +48,7 @@ export const campaignInputSchema = z.object({
   creators_needed: z.number().int().min(1).max(100),
   fee_per_creator_minor: minor.min(100),
   deadline: z.string().refine((s) => !Number.isNaN(Date.parse(s)), 'Invalid date'),
+  license_term_days: z.number().int().min(LICENSE_TERM.minDays).max(LICENSE_TERM.maxDays).default(LICENSE_TERM.defaultDays),
 });
 export type CampaignInput = z.infer<typeof campaignInputSchema>;
 

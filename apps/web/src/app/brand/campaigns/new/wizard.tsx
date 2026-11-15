@@ -1,185 +1,237 @@
 'use client';
-import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
-import { Loader2, Plus, Sparkles, Trash2 } from 'lucide-react';
-import { campaignCharge, CATEGORIES, COUNTRIES, CREDITS_ENABLED, CURRENCIES, LICENSE_DEFAULTS, type Brief, type CurrencyCode, type ShotList } from '@takeone/shared';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, ArrowRight, Check, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { campaignCharge, CATEGORIES, COUNTRIES, CURRENCIES, LICENSE_TERM, type Brief, type CurrencyCode, type ShotList } from '@takeone/shared';
 import { saveCampaign } from '@/lib/actions';
+import { payCampaign } from '@/lib/checkout';
 import { draftProduct, draftShotList } from '@/lib/ai';
-import { Badge, Button, Card, Flag, ICON } from '@/components/ui';
-import { cn, money as fmtMoney } from '@/lib/utils';
+import { Button, Card, Flag, ICON, Input, ProductImage, Textarea } from '@/components/ui';
+import { cn, fmtDate, money as fmtMoney, pluralise } from '@/lib/utils';
 
 const lines = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean);
 const EMPTY_SHOTS: ShotList = { shots: [], talking_points: [], framing_tips: [] };
+const STEPS = ['Product link', 'Brief', 'Creators & budget', 'Review & fund'];
+/** Typical per-creator fees on the platform, shown as guidance only. */
+const RANGE: Record<string, [number, number]> = { INR: [12_000, 25_000], AED: [1_200, 2_500], USD: [300, 600] };
 
 function ListField({ label, hint, value, onChange }: { label: string; hint?: string; value: string[]; onChange: (v: string[]) => void }) {
-  const id = label.toLowerCase().replace(/\W+/g, '-');
-  return (
-    <div>
-      <label className="label" htmlFor={id}>{label} <span className="text-tertiary">· one per line</span></label>
-      <textarea id={id} className="input min-h-24" value={value.join('\n')} onChange={(e) => onChange(e.target.value.split('\n'))} onBlur={(e) => onChange(lines(e.target.value))} />
-      {hint && <p className="mt-1 text-caption text-tertiary">{hint}</p>}
-    </div>
-  );
+  const id = `f-${label.toLowerCase().replace(/\W+/g, '-')}`;
+  return <Textarea id={id} label={`${label} · one per line`} helper={hint} value={value.join('\n')} onChange={(e) => onChange(e.target.value.split('\n'))} onBlur={(e) => onChange(lines(e.target.value))} />;
 }
 
-export function CampaignWizard({ brand, creditMinor, includedVariants }: { brand: { id: string; country: string; currency: string }; creditMinor: number; includedVariants: number }) {
-  const router = useRouter();
-  const [url, setUrl] = useState('');
-  const [extracting, setExtracting] = useState(false);
+interface Draft {
+  step: number; url: string; title: string; product: string; images: string[]; brief: Brief; shots: ShotList; categories: string[]; countries: string[];
+  creators: number; fee: string; term: number; deadline: string;
+}
+
+export function CampaignWizard({ brand, includedVariants }: { brand: { id: string; country: string; currency: string }; includedVariants: number }) {
+  const key = `t1-campaign-draft-${brand.id}`;
+  const range = RANGE[brand.currency] ?? RANGE.USD!;
+  const [d, setD] = useState<Draft>({
+    step: 0, url: '', title: '', product: '', images: [],
+    brief: { description: '', key_benefits: [], goals: '', key_messages: [], must_say: [], must_not_say: [], target_audience: '', uses_ai_likeness: true },
+    shots: EMPTY_SHOTS, categories: [], countries: [brand.country], creators: 3, fee: String(range[0]), term: LICENSE_TERM.defaultDays,
+    deadline: new Date(Date.now() + 21 * 86_400_000).toISOString().slice(0, 10),
+  });
+  const set = (patch: Partial<Draft>) => setD((x) => ({ ...x, ...patch }));
+  const setBrief = (patch: Partial<Brief>) => setD((x) => ({ ...x, brief: { ...x.brief, ...patch } }));
+  const [busy, setBusy] = useState<null | 'extract' | 'shots' | 'draft' | 'fund'>(null);
   const [note, setNote] = useState<string | null>(null);
-  const [title, setTitle] = useState('');
-  const [product, setProduct] = useState('');
-  const [images, setImages] = useState<string[]>([]);
-  const [brief, setBrief] = useState<Brief>({ description: '', key_benefits: [], goals: '', key_messages: [], must_say: [], must_not_say: [], target_audience: '', uses_ai_likeness: true });
-  const [shots, setShots] = useState<ShotList>(EMPTY_SHOTS);
-  const [shotBusy, setShotBusy] = useState(false);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [countries, setCountries] = useState<string[]>([brand.country]);
-  const [creators, setCreators] = useState(3);
-  const [fee, setFee] = useState(brand.currency === 'INR' ? '15000' : brand.currency === 'AED' ? '1500' : '400');
-  const [deadline, setDeadline] = useState(() => new Date(Date.now() + 21 * 86_400_000).toISOString().slice(0, 10));
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const restored = useRef(false);
+
+  // autosave: restore once, then write a moment after each change
+  useEffect(() => {
+    try { const raw = localStorage.getItem(key); if (raw) { setD((x) => ({ ...x, ...(JSON.parse(raw) as Partial<Draft>) })); setSavedAt('earlier'); } } catch { /* nothing saved */ }
+    restored.current = true;
+  }, [key]);
+  useEffect(() => {
+    if (!restored.current) return;
+    const t = setTimeout(() => { try { localStorage.setItem(key, JSON.stringify(d)); setSavedAt('just now'); } catch { /* storage unavailable */ } }, 600);
+    return () => clearTimeout(t);
+  }, [d, key]);
 
   const decimals = CURRENCIES[brand.currency as CurrencyCode]?.decimals ?? 2;
-  const feeMinor = Math.round(Number(fee || 0) * 10 ** decimals); // major units typed by a person → integer minor units, once, at the edge
-  const charge = useMemo(() => (feeMinor >= 100 && creators >= 1 ? campaignCharge(feeMinor, creators, creditMinor) : null), [feeMinor, creators, creditMinor]);
+  const feeMinor = Math.round(Number(d.fee || 0) * 10 ** decimals); // typed in major units → integer minor units, once, at the edge
+  const charge = useMemo(() => (feeMinor >= 100 && d.creators >= 1 ? campaignCharge(feeMinor, d.creators, 0) : null), [feeMinor, d.creators]);
   const money = (m: number) => fmtMoney(m, brand.currency);
+  const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
   async function extract() {
-    setExtracting(true); setNote(null); setError(null);
-    const r = await draftProduct(url);
-    setExtracting(false);
+    setBusy('extract'); setNote(null); setError(null);
+    const r = await draftProduct(d.url);
+    setBusy(null);
     if (!r.ok) return setError(r.error);
     const p = r.data;
-    setProduct(p.product_name); setTitle((t) => t || `${p.product_name} launch`); setImages(p.images);
-    setBrief((b) => ({ ...b, description: p.description, key_benefits: p.key_benefits, key_messages: b.key_messages.length ? b.key_messages : p.key_benefits.slice(0, 3), must_say: b.must_say.length ? b.must_say : [p.product_name] }));
-    setNote(r.provider === 'mock' ? 'Demo mode filled in a starter draft. With an Anthropic API key the page content is read for you.' : r.fetched ? 'Drafted from the page. Check every line before you publish.' : 'The page could not be fetched, so this is a starter draft.');
+    setD((x) => ({ ...x, product: p.product_name, title: x.title || `${p.product_name} launch`, images: p.images,
+      brief: { ...x.brief, description: p.description, key_benefits: p.key_benefits, key_messages: x.brief.key_messages.length ? x.brief.key_messages : p.key_benefits.slice(0, 3), must_say: x.brief.must_say.length ? x.brief.must_say : [p.product_name] } }));
+    setNote(r.provider === 'mock' ? 'Demo mode filled in a starter draft. With the AI service connected, the page itself is read for you.' : r.fetched ? 'Drafted from the page. Check every line.' : 'The page could not be read, so this is a starter draft.');
   }
   async function genShots() {
-    setShotBusy(true); setError(null);
-    const r = await draftShotList(product, { ...brief, key_benefits: lines(brief.key_benefits.join('\n')) });
-    setShotBusy(false);
-    if (!r.ok) return setError(r.error);
-    setShots(r.data);
+    setBusy('shots'); setError(null);
+    const r = await draftShotList(d.product, { ...d.brief, key_benefits: lines(d.brief.key_benefits.join('\n')) });
+    setBusy(null);
+    if (!r.ok) { setError(r.error); return false; }
+    set({ shots: r.data });
+    return true;
   }
-  async function save() {
-    setSaving(true); setError(null);
+  async function next() {
+    setError(null);
+    if (d.step === 1 && d.shots.shots.length === 0 && !(await genShots())) return; // the shot list is drafted from the brief
+    set({ step: d.step + 1 });
+  }
+  async function save(fund: boolean) {
+    setBusy(fund ? 'fund' : 'draft'); setError(null);
     const clean = (a: string[]) => lines(a.join('\n'));
     const r = await saveCampaign({
-      brand_id: brand.id, title, product_name: product, product_url: url, product_images: images,
-      brief: { ...brief, key_benefits: clean(brief.key_benefits), key_messages: clean(brief.key_messages), must_say: clean(brief.must_say), must_not_say: clean(brief.must_not_say) },
-      shot_list: { ...shots, talking_points: clean(shots.talking_points), framing_tips: clean(shots.framing_tips) },
-      categories, countries, creators_needed: creators, fee_per_creator_minor: feeMinor, deadline,
+      brand_id: brand.id, title: d.title, product_name: d.product, product_url: d.url, product_images: d.images,
+      brief: { ...d.brief, key_benefits: clean(d.brief.key_benefits), key_messages: clean(d.brief.key_messages), must_say: clean(d.brief.must_say), must_not_say: clean(d.brief.must_not_say) },
+      shot_list: { ...d.shots, talking_points: clean(d.shots.talking_points), framing_tips: clean(d.shots.framing_tips) },
+      categories: d.categories, countries: d.countries, creators_needed: d.creators, fee_per_creator_minor: feeMinor, deadline: d.deadline, license_term_days: d.term,
     });
-    setSaving(false);
-    if (!r.ok || !r.data) return setError(r.error ?? 'Could not save');
-    router.push(`/brand/campaigns/${r.data.id}`);
+    if (!r.ok || !r.data) { setBusy(null); return setError(r.error ?? 'The campaign could not be saved.'); }
+    try { localStorage.removeItem(key); } catch { /* nothing to clear */ }
+    const id = r.data.id;
+    if (!fund) { window.location.href = `/brand/campaigns/${id}`; return; }
+    const pay = await payCampaign(id);
+    if (!pay.ok) { window.location.href = `/brand/campaigns/${id}`; return; } // saved as a draft; payment can be retried there
+    window.location.href = pay.data?.url ?? `/brand/campaigns/${id}?paid=1`;
   }
-  const toggle = (list: string[], v: string, set: (l: string[]) => void) => set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
-  const chip = (on: boolean) => cn('chip', on && 'is-on');
 
+  const ok = [
+    !!d.product && !!d.title,
+    !!d.brief.goals && d.categories.length > 0 && d.countries.length > 0,
+    !!charge && d.creators >= 1 && d.term >= LICENSE_TERM.minDays && d.term <= LICENSE_TERM.maxDays && !Number.isNaN(Date.parse(d.deadline)),
+    !!charge && d.shots.shots.length > 0,
+  ];
   return (
-    <div className="grid gap-6 lg:grid-cols-main-aside">
-      <div className="space-y-6">
-        <Card>
-          <h2 className="text-h3">1 · Product</h2>
-          <label className="label mt-4" htmlFor="url">Product page URL</label>
-          <div className="flex gap-2">
-            <input id="url" className="input" type="url" placeholder="https://yourstore.com/products/…" value={url} onChange={(e) => setUrl(e.target.value)} />
-            <Button onClick={extract} disabled={!url || extracting} className="shrink-0">{extracting ? <Loader2 size={16} {...ICON} className="animate-spin" /> : <Sparkles size={16} {...ICON} />}Draft from link</Button>
-          </div>
-          {note && <p className="mt-2 text-caption text-secondary">{note}</p>}
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div><label className="label" htmlFor="product">Product name</label><input id="product" className="input" value={product} onChange={(e) => setProduct(e.target.value)} /></div>
-            <div><label className="label" htmlFor="title">Campaign title</label><input id="title" className="input" value={title} onChange={(e) => setTitle(e.target.value)} /></div>
-          </div>
-          <div className="mt-4"><label className="label" htmlFor="desc">Description</label><textarea id="desc" className="input min-h-24" value={brief.description} onChange={(e) => setBrief({ ...brief, description: e.target.value })} /></div>
-          {images.length > 0 && (
-            <div className="mt-4 flex gap-2 overflow-x-auto">
-              {images.map((src) => (
-                <div key={src} className="relative shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt="Product" className="h-24 w-20 rounded-sm object-cover" />
-                  <button aria-label="Remove image" className="absolute right-1 top-1 rounded-full bg-scrim p-1 text-on-media" onClick={() => setImages(images.filter((i) => i !== src))}><Trash2 size={16} {...ICON} /></button>
-                </div>
-              ))}
+    <div className="max-w-3xl">
+      <ol className="mb-6 grid grid-cols-4 gap-2" aria-label="Progress">
+        {STEPS.map((label, i) => (
+          <li key={label}>
+            <button type="button" disabled={i > d.step && !ok.slice(0, i).every(Boolean)} onClick={() => set({ step: i })} aria-current={i === d.step ? 'step' : undefined} className="group block w-full text-left disabled:cursor-not-allowed">
+              <span className={cn('block h-1 rounded-full transition-colors duration-base', i <= d.step ? 'bg-inverse' : 'bg-surface-3')} />
+              <span className={cn('tabular mt-3 block text-caption', i === d.step ? 'text-primary' : 'text-tertiary')}>Step {i + 1}</span>
+              <span className={cn('hidden truncate text-small sm:block', i === d.step ? 'font-medium text-primary' : 'text-secondary')}>{label}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+
+      <Card className="p-6 md:p-8">
+        {d.step === 0 && (
+          <div className="space-y-5">
+            <h2 className="text-h3">Paste your product link</h2>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex-1"><Input id="url" label="Product page" type="url" placeholder="https://yourstore.com/products/…" value={d.url} onChange={(e) => set({ url: e.target.value })} /></div>
+              <Button variant="secondary" onClick={extract} disabled={!d.url} loading={busy === 'extract'} className="h-input"><Sparkles size={16} {...ICON} />Draft from link</Button>
             </div>
-          )}
-        </Card>
-        <Card>
-          <h2 className="text-h3">2 · Brief</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2"><label className="label" htmlFor="goals">Goals</label><textarea id="goals" className="input" value={brief.goals} onChange={(e) => setBrief({ ...brief, goals: e.target.value })} /></div>
-            <ListField label="Key benefits" value={brief.key_benefits} onChange={(v) => setBrief({ ...brief, key_benefits: v })} />
-            <ListField label="Key messages" value={brief.key_messages} onChange={(v) => setBrief({ ...brief, key_messages: v })} />
-            <ListField label="Must say" value={brief.must_say} onChange={(v) => setBrief({ ...brief, must_say: v })} />
-            <ListField label="Must not say" value={brief.must_not_say} onChange={(v) => setBrief({ ...brief, must_not_say: v })} hint="Hooks and edits never add product claims of their own." />
-            <div className="sm:col-span-2"><label className="label" htmlFor="aud">Target audience</label><input id="aud" className="input" value={brief.target_audience} onChange={(e) => setBrief({ ...brief, target_audience: e.target.value })} /></div>
+            {note && <p className="text-small text-secondary">{note}</p>}
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Input id="product" label="Product name" value={d.product} onChange={(e) => set({ product: e.target.value })} />
+              <Input id="title" label="Campaign title" value={d.title} onChange={(e) => set({ title: e.target.value })} />
+            </div>
+            <Textarea id="desc" label="Description" value={d.brief.description} onChange={(e) => setBrief({ description: e.target.value })} />
+            <ListField label="Key benefits" value={d.brief.key_benefits} onChange={(v) => setBrief({ key_benefits: v })} />
+            {d.images.length > 0 && (
+              <ul className="flex gap-3 overflow-x-auto" aria-label="Product images">
+                {d.images.map((src) => (
+                  <li key={src} className="relative shrink-0">
+                    <ProductImage name={d.product || 'Product'} src={src} radius="sm" className="w-20" />
+                    <button type="button" aria-label="Remove image" className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-scrim text-on-media" onClick={() => set({ images: d.images.filter((i) => i !== src) })}><Trash2 size={12} {...ICON} /></button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <label className="mt-4 flex items-start gap-3 text-small">
-            <input type="checkbox" className="mt-1 h-4 w-4 accent-accent" checked={brief.uses_ai_likeness} onChange={(e) => setBrief({ ...brief, uses_ai_likeness: e.target.checked })} />
-            <span className="text-secondary"><span className="text-primary">Allow AI scene and language versions.</span> Uses the creator’s likeness and voice only with their consent for this campaign. Those variants carry an AI label.</span>
-          </label>
-        </Card>
-        <Card>
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-h3">3 · Creator shot list</h2>
-            <Button variant="secondary" size="sm" onClick={genShots} disabled={!product || shotBusy}>{shotBusy ? <Loader2 size={16} {...ICON} className="animate-spin" /> : <Sparkles size={16} {...ICON} />}{shots.shots.length ? 'Regenerate' : 'Generate from brief'}</Button>
-          </div>
-          <p className="mt-1 text-caption text-secondary">What the creator sees while shooting their one take. Edit anything.</p>
-          <div className="mt-4 space-y-3">
-            {shots.shots.map((s, i) => (
-              <div key={i} className="grid gap-2 rounded-sm border border-border bg-surface-2 p-3 sm:grid-cols-shot-row">
-                <input aria-label="Shot title" className="input" value={s.title} onChange={(e) => setShots({ ...shots, shots: shots.shots.map((x, k) => (k === i ? { ...x, title: e.target.value } : x)) })} />
-                <input aria-label="Direction" className="input" value={s.direction} onChange={(e) => setShots({ ...shots, shots: shots.shots.map((x, k) => (k === i ? { ...x, direction: e.target.value } : x)) })} />
-                <input aria-label="Seconds" className="input tabular" type="number" min={1} value={s.seconds} onChange={(e) => setShots({ ...shots, shots: shots.shots.map((x, k) => (k === i ? { ...x, seconds: Number(e.target.value) || 1 } : x)) })} />
-                <button aria-label="Remove shot" className="px-2 text-secondary hover:text-danger-text" onClick={() => setShots({ ...shots, shots: shots.shots.filter((_, k) => k !== i) })}><Trash2 size={16} {...ICON} /></button>
+        )}
+
+        {d.step === 1 && (
+          <div className="space-y-5">
+            <h2 className="text-h3">Write the brief</h2>
+            <Textarea id="goals" label="Goals" placeholder="What should these ads achieve?" value={d.brief.goals} onChange={(e) => setBrief({ goals: e.target.value })} />
+            <div className="grid gap-5 sm:grid-cols-2">
+              <ListField label="Must say" value={d.brief.must_say} onChange={(v) => setBrief({ must_say: v })} />
+              <ListField label="Must not say" value={d.brief.must_not_say} onChange={(v) => setBrief({ must_not_say: v })} hint="Hooks and edits never add product claims of their own." />
+            </div>
+            <Input id="aud" label="Audience" placeholder="Who is this for?" value={d.brief.target_audience} onChange={(e) => setBrief({ target_audience: e.target.value })} />
+            <div><span className="label">Categories</span><div className="flex flex-wrap gap-2">{CATEGORIES.map((c) => <button key={c} type="button" aria-pressed={d.categories.includes(c)} disabled={!d.categories.includes(c) && d.categories.length >= 4} className="chip disabled:opacity-40" onClick={() => set({ categories: toggle(d.categories, c) })}>{c}</button>)}</div></div>
+            <div><span className="label">Creator countries</span><div className="flex flex-wrap gap-2">{Object.entries(COUNTRIES).map(([code, c]) => <button key={code} type="button" aria-pressed={d.countries.includes(code)} className="chip" onClick={() => set({ countries: toggle(d.countries, code) })}><Flag code={code} />{c.name}</button>)}</div></div>
+            <label className="flex items-start gap-3 text-small">
+              <input type="checkbox" className="mt-1 size-4 accent-accent" checked={d.brief.uses_ai_likeness} onChange={(e) => setBrief({ uses_ai_likeness: e.target.checked })} />
+              <span className="text-secondary"><span className="text-primary">Allow AI scene and language versions.</span> Uses the creator’s likeness and voice only with their consent for this campaign. Those variants are marked AI-edited.</span>
+            </label>
+            <div className="border-t border-border pt-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div><div className="text-body font-medium">Creator shot list</div><p className="mt-1 text-small text-secondary">What the creator sees while filming their one take. Drafted from your brief; edit anything.</p></div>
+                <Button variant="secondary" size="sm" onClick={genShots} disabled={!d.product} loading={busy === 'shots'}><Sparkles size={16} {...ICON} />{d.shots.shots.length ? 'Draft again' : 'Draft now'}</Button>
               </div>
-            ))}
-            <Button variant="ghost" size="sm" onClick={() => setShots({ ...shots, shots: [...shots.shots, { title: 'New shot', direction: '', seconds: 8 }] })}><Plus size={16} {...ICON} />Add shot</Button>
+              <div className="mt-4 space-y-3">
+                {d.shots.shots.map((s, i) => {
+                  const upd = (patch: Partial<typeof s>) => set({ shots: { ...d.shots, shots: d.shots.shots.map((x, k) => (k === i ? { ...x, ...patch } : x)) } });
+                  return (
+                    <div key={i} className="grid gap-2 rounded-md border border-border bg-surface-2 p-3 sm:grid-cols-shot-row">
+                      <input aria-label={`Shot ${i + 1} title`} className="input" value={s.title} onChange={(e) => upd({ title: e.target.value })} />
+                      <input aria-label={`Shot ${i + 1} direction`} className="input" value={s.direction} onChange={(e) => upd({ direction: e.target.value })} />
+                      <input aria-label={`Shot ${i + 1} seconds`} className="input tabular" type="number" min={1} value={s.seconds} onChange={(e) => upd({ seconds: Number(e.target.value) || 1 })} />
+                      <button type="button" aria-label={`Remove shot ${i + 1}`} className="grid size-input place-items-center rounded-sm text-secondary transition-colors duration-fast hover:text-danger-text" onClick={() => set({ shots: { ...d.shots, shots: d.shots.shots.filter((_, k) => k !== i) } })}><Trash2 size={16} {...ICON} /></button>
+                    </div>
+                  );
+                })}
+                {d.shots.shots.length > 0 && <Button variant="ghost" size="sm" onClick={() => set({ shots: { ...d.shots, shots: [...d.shots.shots, { title: 'New shot', direction: '', seconds: 8 }] } })}><Plus size={16} {...ICON} />Add shot</Button>}
+              </div>
+            </div>
           </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <ListField label="Talking points" value={shots.talking_points} onChange={(v) => setShots({ ...shots, talking_points: v })} />
-            <ListField label="Framing tips" value={shots.framing_tips} onChange={(v) => setShots({ ...shots, framing_tips: v })} />
+        )}
+
+        {d.step === 2 && (
+          <div className="space-y-5">
+            <h2 className="text-h3">Creators and budget</h2>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Input id="creators" label="Number of creators" className="tabular" type="number" min={1} max={100} value={d.creators} onChange={(e) => set({ creators: Math.min(100, Math.max(1, Math.round(Number(e.target.value)) || 1)) })} helper={`Each delivers up to ten variants; ${includedVariants} are included per creator.`} />
+              <Input id="fee" label={`Fee per creator (${brand.currency})`} className="tabular" inputMode="decimal" value={d.fee} onChange={(e) => set({ fee: e.target.value.replace(/[^\d.]/g, '') })} helper={`Typical range: ${money(range[0] * 10 ** decimals)} to ${money(range[1] * 10 ** decimals)}.`} />
+              <div>
+                <label className="label" htmlFor="term">Licence term · {pluralise(d.term, 'day')}</label>
+                <input id="term" type="range" min={LICENSE_TERM.minDays} max={LICENSE_TERM.maxDays} step={1} value={d.term} onChange={(e) => set({ term: Number(e.target.value) })} className="h-input w-full accent-accent" aria-valuetext={pluralise(d.term, 'day')} />
+                <p className="helper">Paid-ad usage for each selected variant, {LICENSE_TERM.minDays} to {LICENSE_TERM.maxDays} days. Renewals add the same again.</p>
+              </div>
+              <Input id="deadline" label="Deadline" type="date" value={d.deadline} onChange={(e) => set({ deadline: e.target.value })} helper="When creators must submit by." />
+            </div>
           </div>
-        </Card>
-        <Card>
-          <h2 className="text-h3">4 · Creators and budget</h2>
-          <div className="mt-4"><span className="label">Categories</span><div className="flex flex-wrap gap-2">{CATEGORIES.map((c) => <button key={c} aria-pressed={categories.includes(c)} className={chip(categories.includes(c))} onClick={() => toggle(categories, c, setCategories)}>{c}</button>)}</div></div>
-          <div className="mt-4"><span className="label">Creator countries</span><div className="flex flex-wrap gap-2">{Object.entries(COUNTRIES).map(([code, c]) => <button key={code} aria-pressed={countries.includes(code)} className={chip(countries.includes(code))} onClick={() => toggle(countries, code, setCountries)}><Flag code={code} />{c.name}</button>)}</div></div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            <div><label className="label" htmlFor="creators">Number of creators</label><input id="creators" className="input tabular" type="number" min={1} max={100} value={creators} onChange={(e) => setCreators(Math.max(1, Math.round(Number(e.target.value)) || 1))} /></div>
-            <div><label className="label" htmlFor="fee">Budget per creator ({brand.currency})</label><input id="fee" className="input tabular" inputMode="decimal" value={fee} onChange={(e) => setFee(e.target.value.replace(/[^\d.]/g, ''))} /></div>
-            <div><label className="label" htmlFor="deadline">Deadline</label><input id="deadline" className="input" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
-          </div>
-        </Card>
-      </div>
-      <aside className="lg:sticky lg:top-6 lg:self-start">
-        <Card>
-          <div className="text-small font-medium">Escrow summary</div>
-          {charge ? (
-            <dl className="tabular mt-4 space-y-2 text-small">
-              <div className="flex justify-between"><dt className="text-secondary">{creators} × {money(feeMinor)}</dt><dd>{money(charge.grossMinor)}</dd></div>
-              <div className="flex justify-between text-caption"><dt className="text-tertiary">Creators receive (75%)</dt><dd className="text-tertiary">{money(charge.creatorPoolMinor)}</dd></div>
-              <div className="flex justify-between text-caption"><dt className="text-tertiary">Platform fee (25%)</dt><dd className="text-tertiary">{money(charge.platformFeeMinor)}</dd></div>
-              {CREDITS_ENABLED && charge.creditAppliedMinor > 0 && <div className="flex justify-between text-success-text"><dt>Campaign credit</dt><dd>−{money(charge.creditAppliedMinor)}</dd></div>}
-              <div className="flex justify-between border-t border-border pt-3 text-body font-semibold"><dt>You pay into escrow</dt><dd>{money(charge.payableMinor)}</dd></div>
+        )}
+
+        {d.step === 3 && charge && (
+          <div className="space-y-6">
+            <h2 className="text-h3">Review and fund escrow</h2>
+            <dl className="grid gap-5 text-small sm:grid-cols-2">
+              {([['Campaign', d.title], ['Product', d.product], ['Creators', `${pluralise(d.creators, 'creator')} · ${d.countries.join(', ')}`], ['Categories', d.categories.join(', ')], ['Licence term', pluralise(d.term, 'day')], ['Deadline', fmtDate(d.deadline)], ['Shot list', pluralise(d.shots.shots.length, 'shot')], ['Included', `Up to ${includedVariants} variants per creator`]] as const).map(([k, v]) => (
+                <div key={k}><dt className="text-caption text-tertiary">{k}</dt><dd className="mt-1">{v}</dd></div>
+              ))}
             </dl>
-          ) : <p className="mt-3 text-small text-secondary">Enter a budget to see the total.</p>}
-          {CREDITS_ENABLED && charge && charge.creditAppliedMinor > 0 && <p className="mt-3 text-caption text-secondary">Credit only reduces the platform fee. Creator payouts stay the same.</p>}
-          <ul className="mt-4 space-y-2 text-caption text-secondary">
-            <li>Includes up to {includedVariants} selected variants per creator</li>
-            <li>{LICENSE_DEFAULTS.termDays} days of paid-ad usage on Meta, TikTok and YouTube, renewable</li>
-            <li>Perpetual organic use on your own channels</li>
-            <li>Held in escrow until you approve, or 5 days after delivery</li>
-          </ul>
-          {error && <p role="alert" className="mt-4 text-small text-danger-text">{error}</p>}
-          <Button className="mt-5 w-full" onClick={save} disabled={saving || !charge || !title || !product || !categories.length || !shots.shots.length}>{saving && <Loader2 size={16} {...ICON} className="animate-spin" />}Save and continue to payment</Button>
-          {!shots.shots.length && <p className="mt-2 text-center text-caption text-tertiary">Generate the shot list to continue.</p>}
-          <div className="mt-3 text-center"><Badge>Saved as a draft until paid</Badge></div>
-        </Card>
-      </aside>
+            <div className="rounded-md border border-border bg-surface-2 p-5">
+              <dl className="tabular space-y-2 text-small">
+                <div className="flex justify-between"><dt className="text-secondary">{d.creators} × {money(feeMinor)}</dt><dd>{money(charge.grossMinor)}</dd></div>
+                <div className="flex items-baseline justify-between border-t border-border pt-3"><dt className="text-body font-medium">Total into escrow</dt><dd className="text-stat-sm">{money(charge.payableMinor)}</dd></div>
+              </dl>
+              <p className="mt-3 text-small text-secondary">Creators keep 75% ({money(charge.creatorPoolMinor)}); TakeOne’s fee is 25% ({money(charge.platformFeeMinor)}). Held until you approve each creator’s work.</p>
+            </div>
+          </div>
+        )}
+
+        {error && <p role="alert" className="mt-5 text-small text-danger-text">{error}</p>}
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          {d.step > 0 && <Button variant="ghost" onClick={() => set({ step: d.step - 1 })}><ArrowLeft size={16} {...ICON} />Back</Button>}
+          <span className="text-caption text-tertiary" role="status">{savedAt && <><Check size={12} {...ICON} className="mr-1 inline" aria-hidden />Draft saved {savedAt}</>}</span>
+          <span className="flex-1" />
+          {d.step < 3 ? <Button onClick={next} disabled={!ok[d.step]} loading={d.step === 1 && busy === 'shots'}>Continue<ArrowRight size={16} {...ICON} /></Button> : (
+            <>
+              <Button variant="secondary" onClick={() => save(false)} loading={busy === 'draft'} disabled={!ok.every(Boolean) || busy === 'fund'}>Save as draft</Button>
+              <Button onClick={() => save(true)} loading={busy === 'fund'} disabled={!ok.every(Boolean) || busy === 'draft'}>Fund escrow{charge ? ` · ${money(charge.payableMinor)}` : ''}</Button>
+            </>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }

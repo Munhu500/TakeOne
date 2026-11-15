@@ -76,15 +76,37 @@ export function displayMoney(amountMinor: number, from: string, viewer: string, 
   return formatMoney(convertMinor(amountMinor, f, v, rates), v, opts);
 }
 
+/**
+ * Short local-style amount with no minor units: ₹4.2L, ₹1.3Cr, AED 15K, $5K. Indian amounts use lakh and crore.
+ * Rounds down so a band floor is never overstated.
+ */
+export function compactLocal(amountMinor: number, currency: string): string {
+  const cur = isCurrency(currency) ? currency : 'USD';
+  const major = Math.floor(amountMinor / 10 ** CURRENCIES[cur].decimals);
+  const steps: [number, string][] = cur === 'INR' ? [[1e7, 'Cr'], [1e5, 'L'], [1e3, 'K']] : [[1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
+  const prefix = cur === 'INR' ? '₹' : cur === 'AED' ? 'AED ' : '$';
+  for (const [size, unit] of steps) {
+    if (major >= size) {
+      const n = Math.floor((major / size) * 10) / 10;
+      return `${prefix}${n >= 100 || Number.isInteger(n) ? Math.floor(n) : n.toFixed(1)}${unit}`;
+    }
+  }
+  return `${prefix}${major}`;
+}
+
 const BANDS_USD_MINOR = [0, 10_000, 50_000, 100_000, 250_000, 500_000, 1_000_000, 2_500_000];
-/** Earnings are shown as a band ("$5k+ this month") unless the creator opts in to exact figures. */
+/** Earnings are shown as a band ("₹4.2L+ this month") unless the creator opts in to exact figures. */
 export function earningsBand(amountMinor: number, currency: string, viewer: string, rates?: FxRates, suffix = ''): string {
+  const v = isCurrency(viewer) ? viewer : 'USD';
   const usd = convertMinor(amountMinor, isCurrency(currency) ? currency : 'USD', 'USD', rates);
   let floor = 0;
   for (const b of BANDS_USD_MINOR) if (usd >= b) floor = b;
   const tail = suffix ? ` ${suffix}` : '';
-  if (floor === 0) {
-    return `Under ${displayMoney(BANDS_USD_MINOR[1]!, 'USD', viewer, rates, { compact: true })}${tail}`;
-  }
-  return `${displayMoney(floor, 'USD', viewer, rates, { compact: true })}+${tail}`;
+  const local = (usdMinor: number) => compactLocal(convertMinor(usdMinor, 'USD', v, rates), v);
+  return floor === 0 ? `Under ${local(BANDS_USD_MINOR[1]!)}${tail}` : `${local(floor)}+${tail}`;
+}
+/** Exact earnings for creators who opted in: whole units only, never paise or fils. */
+export function exactEarnings(amountMinor: number, currency: string, viewer: string, rates?: FxRates): string {
+  const v = isCurrency(viewer) ? viewer : 'USD';
+  return formatMoney(convertMinor(amountMinor, isCurrency(currency) ? currency : 'USD', v, rates), v, { decimals: 'never' });
 }

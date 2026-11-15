@@ -20,6 +20,7 @@ const SWAPS = [
   [/[\\/]src[\\/]lib[\\/]supabase-server\.ts$/, src('lib/supabase-server.preview.ts')],
   [/[\\/]src[\\/]lib[\\/]ai\.ts$/, src('lib/ai.preview.ts')],
   [/[\\/]src[\\/]components[\\/]invoice-link\.tsx$/, src('components/invoice-link.preview.tsx')],
+  [/[\\/]src[\\/]lib[\\/]domain\.ts$/, src('lib/domain.preview.ts')],
   [/^next\/navigation$/, src('preview/navigation.ts')],
   [/^next\/link$/, src('preview/link.tsx')],
   [/^server-only$/, src('preview/empty.ts')],

@@ -26,9 +26,11 @@ function pdfColor(hexColor: string) {
  * Agency clients get an agency-branded invoice at the agency's marked-up price; TakeOne is never mentioned on it.
  * The 75/25 split is always calculated on the standard price, not on the markup.
  */
-export async function buildInvoicePdf(p: InvoicePayment): Promise<Uint8Array> {
+export async function buildInvoicePdf(p: InvoicePayment, opts: { view?: 'client' | 'cost' } = {}): Promise<Uint8Array> {
   const brand = p.brands;
-  const agency = brand.agencies;
+  // 'cost' is the agency's own invoice from TakeOne at the standard price; 'client' (default) is what the client is billed
+  const agency = opts.view === 'cost' ? null : brand.agencies;
+  const billedTo = opts.view === 'cost' && brand.agencies ? `${brand.agencies.name} (for ${brand.name})` : brand.name;
   const markupBps = agency ? brand.markup_bps ?? agency.markup_default_bps : 0;
   const line = agencyInvoiceLine(Number(p.gross_minor), markupBps);
   const credit = agency ? 0 : Number(p.credit_applied_minor);
@@ -49,7 +51,7 @@ export async function buildInvoicePdf(p: InvoicePayment): Promise<Uint8Array> {
   page.drawRectangle({ x: 0, y: 782, width: 595, height: 60, color: accent });
   text(issuer, 50, 805, 20, bold, paper);
   right('INVOICE', 808, 12, bold, paper);
-  text('Billed to', 50, 740, 9, font, grey); text(brand.name, 50, 724, 13, bold);
+  text('Billed to', 50, 740, 9, font, grey); text(billedTo, 50, 724, 13, bold);
   right(`Invoice ${String(p.id).slice(0, 8).toUpperCase()}`, 740, 10, bold);
   right(new Date(p.created_at).toISOString().slice(0, 10), 724, 10, font, grey);
   right(p.status === 'refunded' ? 'REFUNDED' : 'PAID', 708, 10, bold, accentText);
