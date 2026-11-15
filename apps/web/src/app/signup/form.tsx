@@ -5,8 +5,8 @@ import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Button, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
-export function SignupForm({ allowAgency }: { allowAgency: boolean }) {
-  const [role, setRole] = useState<'brand_member' | 'agency_member'>('brand_member');
+export function SignupForm({ allowAgency, initialRole = 'brand_member' }: { allowAgency: boolean; initialRole?: 'brand_member' | 'agency_member' }) {
+  const [role, setRole] = useState<'brand_member' | 'agency_member'>(allowAgency ? initialRole : 'brand_member');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

@@ -105,3 +105,11 @@ export const agencyBrandingSchema = z.object({
   subdomain: z.string().min(2).max(120).regex(/^[a-z0-9.-]+$/),
   markup_default_bps: z.number().int().min(0).max(20_000),
 });
+
+/** TakeOne Live waitlist (landing page). */
+export const waitlistSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+  role: z.enum(['creator', 'brand']),
+  country: z.enum(['IN', 'AE']),
+});
+export type WaitlistInput = z.infer<typeof waitlistSchema>;

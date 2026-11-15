@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// whole path segments only: /brand and /brand/… are gated, the public /brands page is not
 const PROTECTED = ['/brand', '/agency', '/admin', '/onboarding'];
 
 /**
@@ -22,7 +23,7 @@ export async function middleware(req: NextRequest) {
     },
   });
   const { data } = await supabase.auth.getUser();
-  if (!data.user && PROTECTED.some((p) => req.nextUrl.pathname.startsWith(p))) {
+  if (!data.user && PROTECTED.some((p) => req.nextUrl.pathname === p || req.nextUrl.pathname.startsWith(`${p}/`))) {
     const url = req.nextUrl.clone();
     url.pathname = '/login';
     url.search = `?next=${encodeURIComponent(req.nextUrl.pathname)}`;

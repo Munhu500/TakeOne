@@ -7,7 +7,12 @@ import { THEME_SCRIPT } from '@/lib/theme';
 import { AgencyTheme } from '@/preview/host';
 import './globals.css';
 
-export const metadata: Metadata = { title: 'TakeOne — one take, ten ads', description: 'Static preview with demo data.', robots: { index: false, follow: false } };
+export const metadata: Metadata = {
+  title: 'TakeOne — One take. Every winning ad.',
+  description: 'Creators film one honest take with a real product. TakeOne turns it into ten ranked ad formats, and brands license the winners. Static preview with demo data.',
+  icons: { icon: '/favicon.svg' },
+  robots: { index: false, follow: false },
+};
 
 export default function PreviewLayout({ children }: { children: ReactNode }) {
   return (

@@ -5,6 +5,7 @@
 
 @layer base {
   html, body { background: var(--bg); color: var(--text-primary); }
+  html { scroll-behavior: smooth; }
   body { @apply font-sans text-body antialiased; }
   :focus-visible { outline: 2px solid var(--accent-brand); outline-offset: 2px; border-radius: var(--radius-sm); }
   ::selection { background: var(--accent-soft); }
@@ -40,5 +41,5 @@
   .data-table td { @apply px-4 py-2 align-middle; }
   /* Filter chips (links or buttons) */
   .chip { @apply inline-flex h-control-sm items-center gap-2 whitespace-nowrap rounded-full border border-border px-4 text-small capitalize text-secondary transition duration-fast ease-standard hover:border-border-strong hover:text-primary active:scale-press; }
-  .chip[aria-pressed='true'], .chip[aria-current='true'], .chip.is-on { @apply border-transparent bg-inverse text-on-inverse; }
+  .chip[aria-pressed='true'], .chip[aria-checked='true'], .chip[aria-current='true'], .chip.is-on { @apply border-transparent bg-inverse text-on-inverse; }
 }

@@ -20,7 +20,7 @@ const ok = (name, pass, note = '') => { results.push(`${pass ? 'PASS' : 'FAIL'} 
   // 1. landing
   let p = await open();
   await p.goto(BASE + '/');
-  ok('/ loads (landing)', await see(p, 'Ten ads.') && !(await p.getByText('Preview build').count()));
+  ok('/ loads (landing)', await see(p, 'Get paid by brands.') && await see(p, 'For brands') && !(await p.getByText('Preview build').count()));
   await p.screenshot({ path: `${SHOTS}/pv-landing.png` });
 
   // 2. brand
@@ -50,6 +50,8 @@ const ok = (name, pass, note = '') => { results.push(`${pass ? 'PASS' : 'FAIL'} 
   p = await open();
   await p.goto(BASE + '/agency/?agency=mirage');
   const branded = await see(p, 'Mirage Media') && await see(p, 'Your Mirage Media campaign workspace');
+  // the agency theme is applied after an asynchronous lookup, so wait for it rather than reading once
+  await p.waitForFunction(() => getComputedStyle(document.documentElement).getPropertyValue('--accent-brand').trim().toUpperCase() !== '#7C5CFF', null, { timeout: 15000 }).catch(() => {});
   const accent = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent-brand').trim());
   ok('/agency/?agency=mirage shows agency branding', branded && accent.toUpperCase() === '#E0A526' && !(await p.getByText('TakeOne', { exact: true }).count()), `accent ${accent}, title "${await p.title()}"`);
   await p.screenshot({ path: `${SHOTS}/pv-agency-login.png` });

@@ -4,13 +4,25 @@ import { ToastHost } from '@/components/ui/toast';
 import { fontVariables } from '@/lib/fonts';
 import { hostAgency } from '@/lib/session';
 import { agencyThemeCss, THEME_SCRIPT } from '@/lib/theme';
+import { DEMO } from '@/lib/utils';
 import './globals.css';
+
+const TITLE = 'TakeOne — One take. Every winning ad.';
+const DESCRIPTION = 'Creators film one honest take with a real product. TakeOne turns it into ten ranked ad formats, and brands license the winners. Now open in India and the UAE.';
 
 export async function generateMetadata(): Promise<Metadata> {
   const agency = await hostAgency();
-  return agency
-    ? { title: `${agency.name} · Creator campaigns`, description: `${agency.name} creator campaign workspace` }
-    : { title: 'TakeOne — one take, ten ads', description: 'Creators shoot one take. Brands get up to ten ad variants and license the winners.' };
+  if (agency) return { title: `${agency.name} · Creator campaigns`, description: `${agency.name} creator campaign workspace`, robots: { index: false, follow: false } };
+  return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+    title: TITLE,
+    description: DESCRIPTION,
+    icons: { icon: '/favicon.svg' },
+    openGraph: { title: TITLE, description: DESCRIPTION, type: 'website', siteName: 'TakeOne', images: [{ url: '/og.png', width: 1200, height: 630, alt: 'TakeOne — one take, every winning ad' }] },
+    twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: ['/og.png'] },
+    // the demo is not for search engines; indexing starts when demo mode is switched off
+    robots: DEMO ? { index: false, follow: false } : undefined,
+  };
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {

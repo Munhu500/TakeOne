@@ -14,7 +14,7 @@ const RULES = [
   ['raw hex colour', /(?<![&\w])#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b(?!;)/g],
   ['colour function literal', /\b(?:rgba?|hsla?|oklch|color-mix)\(\s*(?!var\()[\d.]/g],
   ['arbitrary Tailwind value', /(?<=[\s"'`:])-?[a-z][a-z0-9-]*-\[(?!\s)[^\]\n]+\](?!:)/g],
-  ['spacing off the 4pt scale', new RegExp(`(?<=[\\s"'\`:])-?(?:p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|gap|gap-x|gap-y|space-x|space-y)-(?!${SPACE}(?![\\w.]))[\\w./]+`, 'g')],
+  ['spacing off the 4pt scale', new RegExp(`(?<=[\\s"'\`:])-?(?:p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|gap-x|gap-y|gap|space-x|space-y)-(?!${SPACE}(?![\\w.])|[xy]-)[\\w./]+`, 'g')],
   ['stock Tailwind palette', /(?<=[\s"'`:])(?:text|bg|border|ring|fill|stroke|divide|outline|from|to|via|accent|decoration|shadow)-(?:white|black|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-\d{2,3})?(?:\/\d+)?\b/g],
   ['opacity modifier on a colour (use a -soft token)', /(?<=[\s"'`:])(?:text|bg|border|ring|fill|stroke|divide)-[a-z0-9-]+\/\d+\b/g],
   ['stock font size (use the type scale)', /(?<=[\s"'`:])text-(?:xs|sm|base|lg|xl|[2-9]xl)\b/g],

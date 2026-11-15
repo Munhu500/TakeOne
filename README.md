@@ -155,6 +155,19 @@ Real mode: set `DEMO_MODE=false`, add the keys in `.env.example`, set the `demo_
 - Light mode is offered on the brand dashboard only. Agency white-label changes the accent tokens only; an agency's
   fill is darkened automatically until a white label reaches 4.5:1.
 
+## Landing page
+
+- `/` speaks to creators or brands depending on the toggle; `/creators` and `/brands` open with one preselected.
+- Copy lives in `apps/web/src/components/landing/copy.ts`. Statistics there carry a source; do not change one without it.
+- Founding creators and brand logos come from `apps/web/src/data/*.json` (both empty; the rows stay hidden until there
+  are entries, and creators need `"permission": true`). See the README in that folder.
+- Media slots: `public/media/hero/take.mp4`, `variants/<format_id>.mp4`, `live/event.jpg`.
+- The waitlist form writes to the insert-only `waitlist` table. Read entries in the Supabase dashboard.
+- Regenerate the Open Graph image after adding hero footage: start the site, then `pnpm --filter @takeone/web og`.
+- Set `NEXT_PUBLIC_SITE_URL` in production so the Open Graph image URL is absolute. Search engines are blocked while
+  `NEXT_PUBLIC_DEMO_MODE` is on.
+- Analytics: `apps/web/src/lib/analytics.ts` is a no-op with the event names already wired in.
+
 ### Writing style
 
 - **British English** everywhere a person reads: the web app, emails, PDFs and demo data. "licence" (noun: "renew this

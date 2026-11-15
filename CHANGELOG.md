@@ -1,5 +1,17 @@
 # Changelog
 
+## Web premium overhaul 2 of 4 — landing page
+- New landing at `/` with a creators/brands toggle (remembered per tab; `/creators` and `/brands` preselect it) that
+  swaps the hero, problem, how-it-works and final call to action. Sections: proof, earnings, brand results, live
+  formats reel, example leaderboard, trust, TakeOne Live waitlist, pricing, FAQ, footer with country selector.
+- Hero visuals: a phone with three sequenced status chips (creators); one take fanning into ten scored variants on a
+  six-second loop (brands). Both are static with reduced motion.
+- `waitlist` table (migration `20260101000010`): anonymous insert only, no read/update/delete through the API.
+- New public pages: `/agencies`, `/demo`, `/about`, `/contact`, `/privacy`, `/terms`. `/signup?role=creator|brand|agency`.
+- SEO: title, description, Open Graph image (`pnpm --filter @takeone/web og`), favicon; `noindex` while in demo mode.
+- Analytics hook points behind a no-op wrapper (`lib/analytics.ts`).
+- The dashboard sign-in guard now matches whole path segments, so `/brands` is public while `/brand/…` stays gated.
+
 ## Web premium overhaul 1 of 4 — Studio Noir design system
 - `packages/design-tokens`: colours (dark and light), type scale, 4pt spacing, radii, sizes, motion presets, generated
   `tokens.css`, Tailwind preset, and an automated WCAG AA contrast test for every text/surface pair and agency accents.

@@ -50,3 +50,18 @@ export function VideoFrame({ src, poster, media, ratio = 'reel', radius = 'md', 
     </span>
   );
 }
+
+/**
+ * Full-bleed image slot (fills its positioned parent). Shows /public/media/<media>.jpg when supplied; until then a
+ * neutral surface with a small "Image coming soon" label.
+ */
+export function ImageSlot({ media, alt, className }: { media: string; alt: string; className?: string }) {
+  const url = mediaFile(media, ['jpg', 'jpeg', 'png', 'webp']);
+  // eslint-disable-next-line @next/next/no-img-element
+  if (url) return <img src={url} alt={alt} loading="lazy" decoding="async" className={cn('absolute inset-0 size-full object-cover', className)} />;
+  return (
+    <span role="img" aria-label={`${alt}: image coming soon`} className={cn('absolute inset-0 bg-surface-1', className)}>
+      <span aria-hidden className="caption-label absolute bottom-4 right-5">Image coming soon</span>
+    </span>
+  );
+}

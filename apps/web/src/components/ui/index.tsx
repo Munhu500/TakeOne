@@ -5,7 +5,7 @@ import { assetUrl, cn, initials, money, pluralise } from '@/lib/utils';
 
 export { StatusBadge, statusLabel, type StatusKind } from './status';
 export { Flag } from './flag';
-export { ProductImage, VideoFrame } from './media';
+export { ImageSlot, ProductImage, VideoFrame } from './media';
 export const ICON = { strokeWidth: 1.5 } as const;
 
 // ── Button ──────────────────────────────────────────────────────────────────────────────────────────────
