@@ -38,8 +38,8 @@ export async function loadNotes(limit = 8): Promise<Note[]> {
  * Dashboard frame. Sidebar (248px, icons only at 1024px and below) from 768px up; a glass top bar with a scrolling
  * nav row on phones. The content column starts with a bar holding the breadcrumb, the Demo pill and notifications.
  */
-export async function Shell({ session, nav, themeToggle, children }: { session: Session; nav: NavItem[]; themeToggle?: boolean; children: ReactNode }) {
-  const [wl, notes] = await Promise.all([whiteLabel(session), loadNotes()]);
+export async function Shell({ session, nav, themeToggle, internal, children }: { session: Session; nav: NavItem[]; themeToggle?: boolean; /** the admin console: always TakeOne, never an agency's branding */ internal?: boolean; children: ReactNode }) {
+  const [wl, notes] = await Promise.all([internal ? Promise.resolve({ name: 'TakeOne', logo: null, agency: null }) : whiteLabel(session), loadNotes()]);
   const who = session.profile.display_name || session.email;
   const isAgency = session.profile.role === 'agency_member';
   const root = [wl.name];

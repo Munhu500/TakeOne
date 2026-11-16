@@ -11,8 +11,11 @@ export interface ActionResult<T = unknown> { ok: boolean; error?: string; data?:
 /** Every privileged operation is a Postgres function that checks the caller; the web app only forwards the user's session. */
 const ALLOWED = new Set([
   'create_brand', 'create_agency', 'create_client_brand', 'confirm_campaign_payment', 'set_application_status', 'invite_creator', 'select_variants',
-  'purchase_license', 'approve_assignment', 'choose_winner', 'open_dispute', 'send_message', 'qa_review', 'admin_verify_social', 'admin_resolve_dispute',
-  'admin_issue_credit', 'run_scheduled_jobs',
+  'purchase_license', 'approve_assignment', 'choose_winner', 'open_dispute', 'send_message', 'respond_extension',
+  // admin console: every one of these checks the caller's admin role, requires a reason and writes to the audit log
+  'qa_review', 'admin_qa_approve_passing', 'admin_verify_social', 'admin_reject_claim', 'admin_request_recording', 'admin_set_user_status', 'admin_change_tier',
+  'admin_reset_verification', 'admin_set_admin_role', 'admin_campaign_action', 'admin_resolve_dispute', 'admin_withdrawal_action', 'admin_masking_action',
+  'admin_reveal_original', 'admin_update_settings', 'admin_set_fx', 'admin_run_job',
 ]);
 
 export async function rpc<T = unknown>(fn: string, args: Record<string, unknown> = {}, path?: string): Promise<ActionResult<T>> {
@@ -63,9 +66,9 @@ export async function updateAgencyBranding(agencyId: string, input: unknown): Pr
   return { ok: true };
 }
 
-export async function updateRow(table: 'settings' | 'fx_rates' | 'brands', match: Record<string, string>, patch: Record<string, unknown>, path: string): Promise<ActionResult> {
+export async function updateRow(table: 'brands', match: Record<string, string>, patch: Record<string, unknown>, path: string): Promise<ActionResult> {
   const sb = await supabaseServer();
-  const { error } = await sb.from(table).update({ ...patch, ...(table === 'brands' ? {} : { updated_at: new Date().toISOString() }) }).match(match);
+  const { error } = await sb.from(table).update(patch).match(match);
   if (error) return { ok: false, error: error.message };
   revalidatePath(path, 'layout');
   return { ok: true };

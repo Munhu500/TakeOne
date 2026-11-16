@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { getDubbing, getLlm, getScene, getTranscriber, isDemoMode } from '@takeone/providers';
-import { ASPECTS, briefSchema, FORMAT_LIST, formatsForTier, mockPublicMetrics, scoreMetricPlausibility, type Take, type Transcript } from '@takeone/shared';
+import { ASPECTS, briefSchema, computeAutoChecks, FORMAT_LIST, formatsForTier, mockPublicMetrics, scoreMetricPlausibility, type Take, type Transcript } from '@takeone/shared';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ASSETS, connect, rpc, SAMPLE_TAG, SAMPLE_WALL, upload, WORK } from './backend';
 import { ffmpeg, probe } from './ffmpeg';
@@ -75,7 +75,13 @@ async function processTake(sb: SupabaseClient, c: Claimed): Promise<void> {
     sampleWallColor: isSample ? SAMPLE_WALL : null, sceneImage: path.join(ASSETS, 'scene_morning.jpg'),
     llm: getLlm(), dubbing: getDubbing(), scene: getScene(), onProgress: progress,
   });
-  for (const v of outputs) await rpc(sb, 'worker_upsert_variant', { p_take_id: take.id, p_format: v.format, p: await uploadVariant(sb, take.id, v) });
+  const brief = briefSchema.parse(campaign.brief ?? {});
+  for (const v of outputs) {
+    // automated QA checks are computed here, once, and stored with the variant for reviewers
+    const auto_checks = computeAutoChecks({ productName: campaign.product_name, brief, transcript: transcript.text, hook: v.hookText, format: v.format, isSynthetic: v.isSynthetic, aiDisclosure: v.aiDisclosure,
+      language: v.language, productCheck: take.product_check === 'pending' ? null : take.product_check, productCheckReason: take.product_check_reason });
+    await rpc(sb, 'worker_upsert_variant', { p_take_id: take.id, p_format: v.format, p: { ...(await uploadVariant(sb, take.id, v)), auto_checks } });
+  }
   await rpc(sb, 'worker_finish_take', { p_take_id: take.id });
   await rm(dir, { recursive: true, force: true });
 }
@@ -98,7 +104,9 @@ async function rerenderVariant(sb: SupabaseClient, c: Claimed): Promise<void> {
     llm: getLlm(), dubbing: getDubbing(), scene: getScene(), hookOverrides: { [format.id]: { hook: c.job.payload.hook!, options: c.context.variant?.hook_options ?? [] } },
     onProgress: (p) => rpc(sb, 'worker_update_job', { p_job_id: c.job.id, p_status: 'running', p_progress: p }),
   });
-  await rpc(sb, 'worker_upsert_variant', { p_take_id: take.id, p_format: format.id, p: await uploadVariant(sb, take.id, v!) });
+  const auto_checks = computeAutoChecks({ productName: campaign.product_name, brief: briefSchema.parse(campaign.brief ?? {}), transcript: take.transcript?.text ?? '', hook: v!.hookText, format: format.id, isSynthetic: v!.isSynthetic,
+    aiDisclosure: v!.aiDisclosure, language: v!.language, productCheck: take.product_check === 'pending' ? null : take.product_check, productCheckReason: take.product_check_reason });
+  await rpc(sb, 'worker_upsert_variant', { p_take_id: take.id, p_format: format.id, p: { ...(await uploadVariant(sb, take.id, v!)), auto_checks } });
   await rm(dir, { recursive: true, force: true });
 }
 

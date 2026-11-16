@@ -279,7 +279,7 @@ begin
       jsonb_build_object('key', 'brief_match', 'label', 'Hook and captions match the product', 'status', 'pass', 'detail', 'No claims from another product category.'),
       jsonb_build_object('key', 'must_not_say', 'label', 'Nothing on the must-not-say list', 'status', 'pass', 'detail', 'Transcript, captions and hook scanned.'),
       jsonb_build_object('key', 'captions_match', 'label', 'Captions match the transcript', 'status', case when v.format = 'silent_montage' then 'warn' else 'pass' end, 'detail', case when v.format = 'silent_montage' then 'One caption card is shortened from the spoken line.' else 'Word for word.' end))
-    || case when v.format = 'language_version' then jsonb_build_array(jsonb_build_object('key', 'translation', 'label', 'Translation keeps the verdict', 'status', 'pass', 'detail', 'Verdict and product name unchanged.')) else '[]'::jsonb end
+    || case when v.format = 'language_version' then jsonb_build_array(jsonb_build_object('key', 'translation', 'label', 'Translation keeps the verdict', 'status', 'warn', 'detail', 'Not checked automatically yet. Compare the translated version with the original verdict.')) else '[]'::jsonb end
     || case when v.is_synthetic then jsonb_build_array(jsonb_build_object('key', 'ai_disclosure', 'label', 'AI disclosure set', 'status', 'pass', 'detail', 'Marked AI-edited; the brand is told to enable the AI-info label.')) else '[]'::jsonb end
   where v.status <> 'coming_soon';
   -- the failure the demo shows: a skin result claim, with a guarantee, on a hair product

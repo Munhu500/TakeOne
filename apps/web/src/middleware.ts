@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // whole path segments only: /brand and /brand/… are gated, the public /brands page is not
-const PROTECTED = ['/brand', '/agency', '/admin', '/onboarding'];
+const PROTECTED = ['/brand', '/agency', '/admin', '/onboarding', '/mfa'];
 
 /**
  * 1. White-label: pass the request host on so layouts can resolve an agency by its custom (sub)domain and theme the page.

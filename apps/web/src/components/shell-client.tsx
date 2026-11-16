@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
-  BadgeCheck, Bell, Building2, ChevronRight, ChevronsUpDown, CreditCard, FileClock, Gauge, LayoutGrid, LogOut, Megaphone, MessageSquare, Moon, Palette, Plus, Receipt, Scale, Search, Settings, ShieldCheck, Sun, Trophy, Users,
+  BadgeCheck, Bell, Building2, ChevronRight, ChevronsUpDown, CreditCard, FileClock, Gauge, History, LayoutGrid, LogOut, Megaphone, MessageSquare, Moon, Palette, Plus, Receipt, Scale, Search, Settings, ShieldCheck, Sun, Trophy, Users,
 } from 'lucide-react';
 import { COUNTRIES } from '@takeone/shared';
 import { setActiveBrand } from '@/lib/actions';
@@ -13,8 +13,8 @@ import { Avatar, Flag, ICON } from '@/components/ui';
 import { Popover, Tooltip } from '@/components/ui/overlays';
 import { cn, timeAgo } from '@/lib/utils';
 
-const ICONS = { grid: LayoutGrid, trophy: Trophy, clock: FileClock, card: CreditCard, building: Building2, palette: Palette, receipt: Receipt, shield: ShieldCheck, badge: BadgeCheck, users: Users, gauge: Gauge, settings: Settings, message: MessageSquare, scale: Scale, megaphone: Megaphone };
-export interface NavItem { href: string; label: string; icon: string }
+const ICONS = { grid: LayoutGrid, trophy: Trophy, clock: FileClock, card: CreditCard, building: Building2, palette: Palette, receipt: Receipt, shield: ShieldCheck, badge: BadgeCheck, users: Users, gauge: Gauge, settings: Settings, message: MessageSquare, scale: Scale, megaphone: Megaphone, history: History };
+export interface NavItem { href: string; label: string; icon: string; /** live count shown as a badge, e.g. items waiting in a queue */ count?: number }
 
 const activeHref = (nav: NavItem[], path: string) => [...nav].sort((a, b) => b.href.length - a.href.length).find((n) => path === n.href || path.startsWith(`${n.href}/`))?.href;
 
@@ -29,11 +29,13 @@ export function NavLinks({ nav, variant = 'sidebar' }: { nav: NavItem[]; variant
           <Link key={n.href} href={n.href} aria-current={n.href === active ? 'page' : undefined}
             className={cn('flex h-10 shrink-0 items-center gap-3 whitespace-nowrap rounded-sm px-3 text-small transition-colors duration-fast', variant === 'sidebar' && 'justify-center xl:justify-start',
               n.href === active ? 'bg-surface-3 font-medium text-primary' : 'text-secondary hover:bg-surface-3 hover:text-primary')}>
-            <Icon size={20} {...ICON} aria-hidden /><span className={variant === 'sidebar' ? 'sr-only xl:not-sr-only' : undefined}>{n.label}</span>
+            <span className="relative shrink-0"><Icon size={20} {...ICON} aria-hidden />{!!n.count && variant === 'sidebar' && <span aria-hidden className="absolute -right-1 -top-1 size-2 rounded-full bg-accent-brand xl:hidden" />}</span>
+            <span className={variant === 'sidebar' ? 'sr-only xl:not-sr-only xl:flex-1' : undefined}>{n.label}</span>
+            {!!n.count && <span className={cn('tabular rounded-full bg-surface-3 px-2 text-caption text-primary', variant === 'sidebar' && 'hidden xl:inline')} aria-label={`${n.count} waiting`}>{n.count}</span>}
           </Link>
         );
         // collapsed sidebar (1024px and below): the label is hidden, so each icon carries a tooltip
-        return variant === 'sidebar' ? <Tooltip key={n.href} label={n.label} side="right" className="xl:hidden">{link}</Tooltip> : link;
+        return variant === 'sidebar' ? <Tooltip key={n.href} label={n.count ? `${n.label} · ${n.count} waiting` : n.label} side="right" className="xl:hidden">{link}</Tooltip> : link;
       })}
     </nav>
   );
@@ -120,7 +122,8 @@ const SECTIONS: [RegExp, string[]][] = [
   [/^\/agency\/branding/, ['White-label']],
   [/^\/agency\/billing/, ['Billing']],
   [/^\/agency/, ['Clients']],
-  [/^\/admin\/([^/]+)/, ['Admin']],
+  [/^\/admin\/qa/, ['QA review']], [/^\/admin\/verification/, ['Verification']], [/^\/admin\/users/, ['Users']], [/^\/admin\/campaigns\/[^/]+/, ['Campaigns', 'Campaign']], [/^\/admin\/campaigns/, ['Campaigns']],
+  [/^\/admin\/disputes/, ['Disputes']], [/^\/admin\/payouts/, ['Payouts']], [/^\/admin\/masking/, ['Masking flags']], [/^\/admin\/settings/, ['Settings']], [/^\/admin\/audit/, ['Audit log']], [/^\/admin/, ['Overview']],
 ];
 /** e.g. Mirage Media › Noor Beauty › Campaigns. `root` comes from the session; the section from the address. */
 export function Breadcrumb({ root, brandRoot }: { root: string[]; brandRoot: string[] }) {

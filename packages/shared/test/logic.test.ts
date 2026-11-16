@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  availableAt, campaignInputSchema, canTransition, categoryLabel, compactLocal, countryName, productShortName, proPriceFor, creatorScore, earningsBand, exactEarnings, MAIN_BOARD_MIN_COMPLETED, effectiveTier, evaluateGuarantee, FORMAT_LIST, formatsForTier, isRisingStar, maskContactInfo,
+  availableAt, campaignInputSchema, canTransition, computeAutoChecks, worstCheck, type AutoCheck, categoryLabel, compactLocal, countryName, productShortName, proPriceFor, creatorScore, earningsBand, exactEarnings, MAIN_BOARD_MIN_COMPLETED, effectiveTier, evaluateGuarantee, FORMAT_LIST, formatsForTier, isRisingStar, maskContactInfo,
   mockPublicMetrics, nextLedgerState, onboardingSchema, rankBrands, rankCreators, scoreMetricPlausibility, shouldFlagUser, sumBalances, V1_FORMATS, validateWithdrawal,
   withdrawalMethodsFor, withdrawalSchema,
 } from '../src';
@@ -236,5 +236,32 @@ describe('display names and market prices', () => {
     expect(proPriceFor('GB')).toEqual({ currency: 'USD', minor: 1_900 });
     expect(proPriceFor(null)).toEqual({ currency: 'USD', minor: 1_900 });
     expect(proPriceFor('IN', { default: { currency: 'USD', minor: 2_900 }, IN: { currency: 'INR', minor: 79_900 } }).minor).toBe(79_900);
+  });
+});
+
+describe('automated QA checks', () => {
+  const base = { productName: 'Oud Rose Hair Mist', brief: { description: 'A light hair mist.', key_benefits: ['Lasts all day', 'Alcohol-free'], must_not_say: ['Medical or guaranteed-results claims', 'BrandX'] },
+    transcript: 'I love layering fragrance. The oud and rose last all day and it feels light, not oily.', format: 'silent_montage', isSynthetic: false, aiDisclosure: null, productCheck: 'passed' as const };
+  const by = (cs: AutoCheck[], k: string) => cs.find((c) => c.key === k)!;
+  it('passes an honest hook', () => {
+    const cs = computeAutoChecks({ ...base, hook: 'Light, not oily' });
+    expect(worstCheck(cs)).toBe('pass');
+  });
+  it('fails a skin result claim with a guarantee on a hair product', () => {
+    const cs = computeAutoChecks({ ...base, hook: 'Glowing skin in 30 days, guaranteed' });
+    expect(by(cs, 'brief_match').status).toBe('fail');
+    expect(by(cs, 'must_not_say').status).toBe('fail');
+    expect(by(cs, 'must_not_say').detail).toMatch(/guaranteed/);
+    expect(by(cs, 'must_not_say').detail).toMatch(/in 30 days/);
+    expect(worstCheck(cs)).toBe('fail');
+  });
+  it('catches a competitor named by the brand and a missing AI disclosure', () => {
+    expect(by(computeAutoChecks({ ...base, hook: 'Better than BrandX' }), 'must_not_say').status).toBe('fail');
+    expect(by(computeAutoChecks({ ...base, format: 'day_in_life', hook: null }), 'ai_disclosure').status).toBe('fail');
+    expect(by(computeAutoChecks({ ...base, format: 'day_in_life', hook: null, isSynthetic: true, aiDisclosure: 'Enable the AI-info label' }), 'ai_disclosure').status).toBe('pass');
+  });
+  it('flags a failed frame check and asks a person to check translations', () => {
+    expect(by(computeAutoChecks({ ...base, hook: null, productCheck: 'failed' }), 'product_visible').status).toBe('fail');
+    expect(by(computeAutoChecks({ ...base, format: 'language_version', hook: null, isSynthetic: true, aiDisclosure: 'x', language: 'ar' }), 'translation').status).toBe('warn');
   });
 });

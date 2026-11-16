@@ -2,11 +2,12 @@
 // which picks the real page from the address bar. `_` folders are placeholders that .htaccess serves for any id.
 import { PreviewHost } from '@/preview/host';
 
-const ADMIN = ['qa', 'verification', 'users', 'campaigns', 'disputes', 'payouts', 'masking', 'settings'];
+// add each admin page here (and in preview/host.tsx ROUTES) as it is written
+const ADMIN = ['audit'];
 const PATHS = [
   '', 'login', 'signup', 'onboarding', 'dashboard', 'creators', 'brands', 'agencies', 'about', 'contact', 'privacy', 'terms', 'demo', 'auth/callback', '_design',
   'brand', 'brand/campaigns/new', 'brand/campaigns/_', 'brand/campaigns/_/review/_', 'brand/licenses', 'brand/leaderboard', 'brand/billing',
-  'agency', 'agency/branding', 'agency/billing', 'admin', ...ADMIN.map((s) => `admin/${s}`),
+  'agency', 'agency/branding', 'agency/billing', 'mfa', 'admin', ...ADMIN.map((s) => `admin/${s}`),
 ];
 export const dynamicParams = false;
 export function generateStaticParams() {
