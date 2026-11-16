@@ -2,6 +2,8 @@
 
 Save this file as CLAUDE.md at the repo root and follow it throughout the project.
 
+> **Current state:** the premium web overhaul is in progress on branch `premium-web`. Read [HANDOFF.md](./HANDOFF.md) first: it has the status of the work, where it stopped, and decisions that override this spec (for example licence terms of 35–45 days, credits switched off, British English).
+
 ## What we're building
 
 TakeOne is a two-sided marketplace app.
