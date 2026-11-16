@@ -5,7 +5,8 @@ insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-0000000000b1', 'b1@test.dev', '{"role":"brand_member","display_name":"B1"}'),
   ('00000000-0000-0000-0000-0000000000d1', 'adm@test.dev', '{"display_name":"Admin"}'),
   ('00000000-0000-0000-0000-0000000000e1', 'wrk@test.dev', '{"display_name":"Worker"}');
-update profiles set role = 'admin' where id = '00000000-0000-0000-0000-0000000000d1';
+-- demo mode lets an admin marked mfa_exempt through without a second factor
+update profiles set role = 'admin', admin_role = 'super_admin', mfa_exempt = true where id = '00000000-0000-0000-0000-0000000000d1';
 update profiles set role = 'worker' where id = '00000000-0000-0000-0000-0000000000e1';
 delete from creators where profile_id in ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000e1');
 create function pg_temp.as_user(uid text) returns void language plpgsql as $$
@@ -54,7 +55,7 @@ select pg_temp.expect(submit_variants((select id from assignments), array(select
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000b1');
 select pg_temp.expect((select count(*) from variants) = 0, 'brand sees nothing before QA');
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000d1');
-select qa_review(id, format <> 'silent_montage', 'ok') from variants;
+select qa_review(id, format <> 'silent_montage', 'Reviewed against the brief in the test', case when format = 'silent_montage' then 'quality' end) from variants;
 -- brand selects 2 (base), buys 1 extra, approves
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000b1');
 select pg_temp.expect((select count(*) from variants) = 3, 'brand sees the 3 QA-approved variants');

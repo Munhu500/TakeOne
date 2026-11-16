@@ -56,11 +56,17 @@ declare
 begin
   -- ── staff + brand-side logins ──
   perform seed_user('dddddddd-0000-4000-8000-000000000001', 'admin@takeone.demo', 'admin', 'TakeOne Admin');
-  perform seed_user('bbbbbbbb-0000-4000-8000-000000000001', 'brand@takeone.demo', 'brand_member', 'Neha (Kaya Glow)');
-  perform seed_user('bbbbbbbb-0000-4000-8000-000000000002', 'brand.chai@takeone.demo', 'brand_member', 'Rahul (Chai & Co)');
-  perform seed_user('bbbbbbbb-0000-4000-8000-000000000003', 'brand.ae@takeone.demo', 'brand_member', 'Sara (Dune Athletics)');
-  perform seed_user('bbbbbbbb-0000-4000-8000-000000000004', 'brand.tech@takeone.demo', 'brand_member', 'Faisal (Souk Tech)');
-  perform seed_user('bbbbbbbb-0000-4000-8000-000000000005', 'agency@takeone.demo', 'agency_member', 'Maya (Mirage Media)');
+  -- one demo admin per role, so role limits can be seen; all are exempt from two-factor in demo mode only
+  perform seed_user('dddddddd-0000-4000-8000-000000000002', 'admin.ops@takeone.demo', 'admin', 'Asha Rao');
+  perform seed_user('dddddddd-0000-4000-8000-000000000003', 'admin.finance@takeone.demo', 'admin', 'Farid Khan');
+  perform seed_user('dddddddd-0000-4000-8000-000000000004', 'admin.trust@takeone.demo', 'admin', 'Meenal Shah');
+  update profiles set mfa_exempt = true, admin_role = case right(id::text, 1) when '1' then 'super_admin' when '2' then 'operations' when '3' then 'finance' else 'trust_safety' end where id::text like 'dddddddd-0000-4000-8000-%';
+  delete from creators where profile_id::text like 'dddddddd-0000-4000-8000-%';
+  perform seed_user('bbbbbbbb-0000-4000-8000-000000000001', 'brand@takeone.demo', 'brand_member', 'Neha');
+  perform seed_user('bbbbbbbb-0000-4000-8000-000000000002', 'brand.chai@takeone.demo', 'brand_member', 'Rahul');
+  perform seed_user('bbbbbbbb-0000-4000-8000-000000000003', 'brand.ae@takeone.demo', 'brand_member', 'Sara');
+  perform seed_user('bbbbbbbb-0000-4000-8000-000000000004', 'brand.tech@takeone.demo', 'brand_member', 'Faisal');
+  perform seed_user('bbbbbbbb-0000-4000-8000-000000000005', 'agency@takeone.demo', 'agency_member', 'Maya');
   update profiles set country = 'AE', currency = 'AED', locale = 'en-AE' where id in ('bbbbbbbb-0000-4000-8000-000000000003', 'bbbbbbbb-0000-4000-8000-000000000004', 'bbbbbbbb-0000-4000-8000-000000000005');
 
   insert into agencies (id, name, primary_color, subdomain, markup_default_bps) values (agency, 'Mirage Media', '#E0A526', 'mirage.localhost', 2000);
@@ -232,11 +238,59 @@ begin
     (hero, 'accepted', 'You''re in: SPF 50 Invisible Sunscreen launch', 'Open the campaign to see your shot list and start shooting.', jsonb_build_object('assignment_id', a2), now() - interval '2 days'),
     (hero, 'invite', 'Invitation: Masala Chai Instant Premix', 'A brand invited you directly. Respond within 48 hours.', '{"campaign_id":"c0000000-0000-4000-8000-000000000003"}', now() - interval '5 hours'),
     ('bbbbbbbb-0000-4000-8000-000000000001', 'delivered', 'New variants to review', 'SPF 50 Invisible Sunscreen launch', jsonb_build_object('assignment_id', a3), now() - interval '20 hours');
-  insert into disputes (assignment_id, opened_by, reason, created_at) values (a3, 'aaaaaaaa-0000-4000-8000-000000000005', 'Product arrived 4 days late; asking for a deadline extension.', now() - interval '3 days');
   insert into audit_log (action, entity, entity_id, data) values ('seed', 'database', 'demo', '{}');
 end $$;
 
 drop function public.seed_user(uuid, text, text, text);
 drop function public.seed_brief(text, text, text, text, text);
 drop function public.seed_shots(text, text);
+-- ── admin console demo data: typed disputes, a deadline-extension case, payouts on hold and failed, automated QA checks ──
+do $$
+declare hero uuid := 'aaaaaaaa-0000-4000-8000-000000000001'; bad uuid := 'aaaaaaaa-0000-4000-8000-000000000005'; a1 uuid; a2 uuid; a3 uuid; er uuid; did uuid; mid uuid; c2 uuid := 'c0000000-0000-4000-8000-000000000002';
+begin
+  select id into a1 from assignments where creator_id = hero and campaign_id = 'c0000000-0000-4000-8000-000000000001';
+  select id into a2 from assignments where creator_id = hero and campaign_id = c2;
+  select id into a3 from assignments where creator_id = bad and campaign_id = c2;
+
+  -- 1. a creator asked the brand for more time; nobody answered for 48 hours, so it reached the admins
+  insert into extension_requests (assignment_id, requested_by, new_due_at, reason, status, respond_by, responded_at, created_at)
+  values (a2, hero, now() + interval '14 days', 'The product arrived four days late, so I need until next week to film it properly.', 'escalated', now() - interval '22 hours', now() - interval '22 hours', now() - interval '70 hours') returning id into er;
+  insert into disputes (assignment_id, opened_by, reason, type, requested_due_at, sla_due_at, created_at)
+  values (a2, hero, 'The brand did not answer a deadline extension within 48 hours. Creator’s reason: The product arrived four days late, so I need until next week to film it properly.', 'deadline_extension', now() + interval '14 days', now() + interval '26 hours', now() - interval '22 hours') returning id into did;
+  update extension_requests set dispute_id = did where id = er;
+  -- 2. a payment question on the finished campaign
+  insert into disputes (assignment_id, opened_by, reason, type, sla_due_at, created_at)
+  values (a1, 'bbbbbbbb-0000-4000-8000-000000000001', 'We were charged for the partnership ad add-on twice on the same day. Please check and refund the duplicate.', 'payment_issue', now() + interval '40 hours', now() - interval '8 hours');
+  -- payouts: one held automatically (the account is flagged for sharing contact details), one failed
+  insert into withdrawals (creator_id, method, destination, amount_minor, currency, status, created_at) values (bad, 'upi', '{"upi_id":"sneha@okaxis"}', 900000, 'INR', 'requested', now() - interval '9 hours');
+  insert into withdrawals (creator_id, method, destination, amount_minor, currency, status, provider_ref, created_at) values ('aaaaaaaa-0000-4000-8000-000000000008', 'bank_iban', '{"iban":"AE07 0331 2345 6789 0123 456"}', 240000, 'AED', 'failed', 'mock_po_seed_failed', now() - interval '2 days');
+  -- the second one is large enough to trip the first-withdrawal rule; for the demo it should read as a failed payout
+  update withdrawals set status = 'failed', hold_reason = null, hold_rule = null, held_at = null, provider_ref = 'mock_po_seed_failed' where creator_id = 'aaaaaaaa-0000-4000-8000-000000000008';
+  update creators set kyc_status = 'verified' where profile_id in (bad, 'aaaaaaaa-0000-4000-8000-000000000008');
+
+  -- masking: link the attempts to the masked message and keep its original for Trust & Safety
+  select id into mid from messages where sender_id = bad and had_masking order by created_at desc limit 1;
+  update masking_attempts set message_id = mid where profile_id = bad and message_id is null and id = (select id from masking_attempts where profile_id = bad order by created_at desc limit 1);
+  insert into masked_originals (message_id, original) values (mid, 'Can we discuss rates? WhatsApp me on +91 98765 43210 or DM me on Instagram @sneha.reddy') on conflict do nothing;
+
+  -- automated QA checks, stored with each variant when it is generated
+  update variants v set auto_checks = jsonb_build_array(
+      jsonb_build_object('key', 'product_visible', 'label', 'Product visible in frame', 'status', 'pass', 'detail', 'Label visible in 4 of 5 sampled frames.'),
+      jsonb_build_object('key', 'brief_match', 'label', 'Hook and captions match the product', 'status', 'pass', 'detail', 'No claims from another product category.'),
+      jsonb_build_object('key', 'must_not_say', 'label', 'Nothing on the must-not-say list', 'status', 'pass', 'detail', 'Transcript, captions and hook scanned.'),
+      jsonb_build_object('key', 'captions_match', 'label', 'Captions match the transcript', 'status', case when v.format = 'silent_montage' then 'warn' else 'pass' end, 'detail', case when v.format = 'silent_montage' then 'One caption card is shortened from the spoken line.' else 'Word for word.' end))
+    || case when v.format = 'language_version' then jsonb_build_array(jsonb_build_object('key', 'translation', 'label', 'Translation keeps the verdict', 'status', 'pass', 'detail', 'Verdict and product name unchanged.')) else '[]'::jsonb end
+    || case when v.is_synthetic then jsonb_build_array(jsonb_build_object('key', 'ai_disclosure', 'label', 'AI disclosure set', 'status', 'pass', 'detail', 'Marked AI-edited; the brand is told to enable the AI-info label.')) else '[]'::jsonb end
+  where v.status <> 'coming_soon';
+  -- the failure the demo shows: a skin result claim, with a guarantee, on a hair product
+  update variants set hook_text = 'Glowing skin in 30 days, guaranteed', hook_options = array['Glowing skin in 30 days, guaranteed', 'Light, not oily. Watch.', 'Alcohol-free, all day'], score = 58,
+    score_reason = 'Reads well muted, but the hook makes a result claim the creator never said.',
+    auto_checks = jsonb_build_array(
+      jsonb_build_object('key', 'product_visible', 'label', 'Product visible in frame', 'status', 'pass', 'detail', 'Label visible in 4 of 5 sampled frames.'),
+      jsonb_build_object('key', 'brief_match', 'label', 'Hook and captions match the product', 'status', 'fail', 'detail', 'The hook is about skin; the product is a hair mist.'),
+      jsonb_build_object('key', 'must_not_say', 'label', 'Nothing on the must-not-say list', 'status', 'fail', 'detail', 'Guaranteed result (“guaranteed”) and a timed result claim (“in 30 days”).'),
+      jsonb_build_object('key', 'captions_match', 'label', 'Captions match the transcript', 'status', 'warn', 'detail', 'The hook line is not in the transcript.'))
+  where take_id = '7a000000-0000-4000-8000-000000000003' and format = 'silent_montage';
+end $$;
+
 select public.refresh_leaderboards();
